@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuração de Pinos</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1em;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        span {
+            margin-bottom: 1em;
+        }
+
+        @media (min-width: 600px) {
+            form {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            span {
+                width: 30%;
+            }
+        }
+        label {
+            display: block;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Configuração de Pinos</h1>
+
+    <form id="pinConfigForm" method="get">
+        <div id="deviceContainer"></div>
+
+        <div style="bottom: 0; width: 100%; text-align: left; padding-top: 20px;">
+            <input type="submit" id="saveButton" value="Salvar Configurações">
+        </div>
+    </form>
+    <script src="../js/configJS.js"></script>
+</body>
+</html>

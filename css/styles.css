@@ -1,0 +1,98 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+.container {
+    margin: 20px;
+}
+
+.checkbox-container {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.checkbox-container input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-slider {
+    background-color: #ccc;
+    border-radius: 15px;
+    cursor: pointer;
+    display: inline-block;
+    height: 30px;
+    line-height: 30px; /* Adicionado para centralizar o texto verticalmente */
+    padding: 0 10px; /* Adicionado para adicionar espaço ao redor do texto */
+    position: relative;
+    width: 80px; /* Ajuste conforme necessário */
+    transition: background-color 0.3s ease; /* Adicionado para suavizar a transição de cor */
+}
+
+.checkbox-slider:before {
+    background-color: #fff;
+    border-radius: 50%;
+    content: "";
+    height: 26px;
+    position: absolute;
+    top: 2px;
+    transition: transform 0.3s ease, left 0.3s ease; /* Adicionado para suavizar a transição do indicador */
+    width: 26px;
+    left: 2px; /* Ajustado para a posição totalmente à esquerda */
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkbox-slider:before {
+    transform: translateX(calc(100% - 30px)); /* Atualizado para se ajustar ao tamanho do slider */
+    left: auto;
+    right: 2px;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkbox-slider:after {
+    content: "ON";
+    color: white;
+    position: absolute;
+    left: 5px; /* Ajustado para evitar que o texto seja coberto pela bolinha */
+    top: 50%; /* Adicionado para centralizar verticalmente */
+    transform: translateY(-50%); /* Adicionado para centralizar verticalmente */
+}
+
+.checkbox-container .checkbox-slider:after {
+    content: "OFF";
+    color: white;
+    position: absolute;
+    right: 5px; /* Ajustado para evitar que o texto seja coberto pela bolinha */
+    top: 50%; /* Adicionado para centralizar verticalmente */
+    transform: translateY(-50%); /* Adicionado para centralizar verticalmente */
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkbox-slider {
+    background-color: #2196F3; /* Cor azul quando o checkbox está marcado */
+}
+
+@media only screen and (max-width: 600px) {
+    .checkbox-slider {
+        width: 60px;
+        height: 24px;
+    }
+    
+    .checkbox-slider:before {
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        top: 2px;
+    }
+}
+
+#dadosDoBackend {
+    --width: 100%;
+    --display: flex;
+    --flex-direction: column;
+    --align-items: center;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+
+}
