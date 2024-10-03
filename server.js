@@ -37,21 +37,15 @@ const SensorVoltagem = require("./dispositivos/SensorVoltagem");
 const Display = require("./dispositivos/Display");
 const DeviceConfigLoader = require("./pinos/DeviceConfigLoader");
 const PINOS_PROPERTIES_FILE = './conf/pinos.properties';
-//const serverNode = './serverNode.js';
-//const DispositivosControler = require("./dispositivos/DispositivosControlerNode");
-//const child_process = require('child_process');
 
 // Inicialização da placa Johnny-Five
 var five = require("johnny-five");
-var board = new five.Board({ port: 'COM9' });
+var board = new five.Board(/*{ port: 'COM9' }*/);
 
 // Inicialização do servidor WebSocket
 const WebSocket = require('ws');
 // Crie um servidor WebSocket na porta desejada
 const wss = new WebSocket.Server({ port: 8080 });
-
-//1
-//dispositivosControler = new DispositivosControler(wss, board);
 
 // Pinos analógicos do Arduino
 const analogPins = { 82: 'A15', 83: 'A14', 84: 'A13', 85: 'A12', 86: 'A11', 87: 'A10', 88: 'A9', 89: 'A8', 90: 'A7', 91: 'A6', 92: 'A5', 93: 'A4', 94: 'A3', 95: 'A2', 96: 'A1', 97: 'A0' };
@@ -152,24 +146,3 @@ async function instanciarDispositivos() {
     }
 }
 instanciarDispositivos();
-
-// recarregar configuração com novos pinos configurados, subindo novas instancias dos dispositivos
-//configLoader.on('configUpdated', () => {
-//    console.log('configUpdated');
-    /*loadConfig();
-    console.log('antes: ', instances.length);
-    for (let i = 0; i < instances.length; i++) {
-        instances[i] = null;
-    }
-    instances = [];
-    console.log('apos: ', instances.length);
-    instanciarDispositivos();
-    console.log('apos2: ', instances.length);
-    */
-    /*let newProcess = child_process.spawn('node', [this], {
-        detached: true,
-        stdio: 'inherit'
-    });
-    process.exit();*/
-    //dispositivosControler.instanciarDispositivos();
-//})
