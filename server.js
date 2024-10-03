@@ -32,10 +32,11 @@ numDevices = 2;
 //
 
 //https://johnny-five.io/api/pin/
-const SensorCorrente = require("./dispositivos/SensorCorrente");
-const SensorVoltagem = require("./dispositivos/SensorVoltagem");
-const Display = require("./dispositivos/Display");
-const DeviceConfigLoader = require("./pinos/DeviceConfigLoader");
+const SensorCorrente        = require("./dispositivos/SensorCorrente");
+const SensorVoltagem        = require("./dispositivos/SensorVoltagem");
+const Display               = require("./dispositivos/Display");
+const DeviceConfigLoader    = require("./pinos/DeviceConfigLoader");
+const analogPins            = require('./pinos/pins');
 const PINOS_PROPERTIES_FILE = './conf/pinos.properties';
 
 // Inicialização da placa Johnny-Five
@@ -46,9 +47,6 @@ var board = new five.Board(/*{ port: 'COM9' }*/);
 const WebSocket = require('ws');
 // Crie um servidor WebSocket na porta desejada
 const wss = new WebSocket.Server({ port: 8080 });
-
-// Pinos analógicos do Arduino
-const analogPins = { 82: 'A15', 83: 'A14', 84: 'A13', 85: 'A12', 86: 'A11', 87: 'A10', 88: 'A9', 89: 'A8', 90: 'A7', 91: 'A6', 92: 'A5', 93: 'A4', 94: 'A3', 95: 'A2', 96: 'A1', 97: 'A0' };
 
 // carrega as configurações do arquivo pinos.properties - inicio
 const configLoader = new DeviceConfigLoader(PINOS_PROPERTIES_FILE);
