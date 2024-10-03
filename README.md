@@ -3,10 +3,13 @@
 # Instalar johnny-five
 npm install johnny-five
 npm install ws
+npm install express
 
 # Dentro da raiz do projeto executar:
-node .\serverNode.js
+node .\server.js
 
-# abrir 
-file:///C:/PainelEletrico/html/index.html
-file:///C:/PainelEletrico/html/config.html
+# abrir a pagina inicial
+http://localhost:3000/
+
+# abrir a pagina de configuração dos pinos
+http://localhost:3000/config

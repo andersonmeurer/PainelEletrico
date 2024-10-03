@@ -3,6 +3,34 @@ numDevices = 2;
 //SENSOR DE CORRENTE https://www.usinainfo.com.br/blog/projeto-medindo-corrente-com-o-sensor-acs712-e-o-arduino/
 // SENSOR DE VOLTAGEM: https://lastminuteengineers.com/voltage-sensor-arduino-tutorial/
 
+//
+    const express = require('express');
+    const path = require('path');
+
+    const app = express();
+    const PORT = 3000; // ou qualquer porta que você preferir
+
+    // Servir arquivos estáticos (CSS, JS, imagens, etc.)
+    app.use('/css', express.static(path.join(__dirname, 'css')));
+    app.use('/js', express.static(path.join(__dirname, 'js')));
+    app.use('/html', express.static(path.join(__dirname, 'html')));
+
+    // Servir a página HTML
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'html/index.html')); // ajuste o caminho conforme necessário
+    });
+
+    // Servir a página config.html
+    app.get('/config', (req, res) => {
+        res.sendFile(path.join(__dirname, 'html/config.html')); // ajuste o caminho conforme necessário
+    });
+
+    // Iniciar o servidor
+    app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    });
+//
+
 //https://johnny-five.io/api/pin/
 const SensorCorrente = require("./dispositivos/SensorCorrente");
 const SensorVoltagem = require("./dispositivos/SensorVoltagem");
