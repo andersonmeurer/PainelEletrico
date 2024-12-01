@@ -1,18 +1,19 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const five = require('johnny-five');
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Variável global para o caminho do arquivo
+const configFilePath = path.join(__dirname, 'config', 'pinos.properties');
 
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-app.get('/v2/config/pinos.properties', (req, res) => {
-  const filePath = path.join(__dirname, 'config', 'pinos.properties');
-
-  fs.readFile(filePath, 'utf8', (err, data) => {
+app.get('/loadConfig', (req, res) => {
+  fs.readFile(configFilePath, 'utf8', (err, data) => {
     if (err) {
       if (err.code === 'ENOENT') {
         res.status(404).send('Arquivo não encontrado');
@@ -26,11 +27,14 @@ app.get('/v2/config/pinos.properties', (req, res) => {
   });
 });
 
+app.get('/configFilePath', (req, res) => {
+  res.json({ path: configFilePath });
+});
+
 app.post('/saveConfig', (req, res) => {
   const config = req.body.config;
-  const filePath = path.join(__dirname, 'config', 'pinos.properties');
 
-  fs.writeFile(filePath, config, (err) => {
+  fs.writeFile(configFilePath, config, (err) => {
     if (err) {
       console.error('Erro ao salvar o arquivo:', err);
       res.status(500).send('Erro ao salvar o arquivo');
@@ -38,6 +42,21 @@ app.post('/saveConfig', (req, res) => {
       res.send('Arquivo salvo com sucesso');
     }
   });
+});
+
+app.post('/togglePin', (req, res) => {
+  const { pin, state } = req.body;
+  if (isBoardReady) {
+    const led = new five.Led(pin);
+    if (state === 'on') {
+      led.on();
+    } else {
+      led.off();
+    }
+    res.send('Comando enviado ao Arduino');
+  } else {
+    res.status(500).send('Placa não está pronta');
+  }
 });
 
 // Rota para a página inicial
@@ -53,8 +72,8 @@ app.listen(PORT, () => {
 });
 
 //------------------------------------------------------------ johnny-five
-const five = require('johnny-five');
-var board = new five.Board();
+let isBoardReady = false;
+const board = new five.Board();
 
 board.on("ready", () => {
   console.log("Johnny-Five está pronto!");

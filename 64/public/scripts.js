@@ -1,8 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const modulesContainer = document.getElementById('modules-container');
-
-  fetch('/v2/config/pinos.properties')
-    .then(response => response.text())
+  // Carregar configurações já salvas
+  fetch('/loadConfig')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Arquivo não encontrado');
+      }
+      return response.text();
+    })
     .then(config => {
       const modules = parseConfig(config);
       renderModules(modules);
@@ -10,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(error => {
       console.error('Erro ao carregar a configuração:', error);
     });
+
+  const modulesContainer = document.getElementById('modules-container');
 
   function parseConfig(config) {
     const modules = [];
@@ -47,10 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (device.type === 'rele') {
           deviceElement.innerHTML = `
             <label class="switch">
-              <input type="checkbox">
+              <input type="checkbox" data-pin="${device.pin}">
               <span class="slider"></span>
             </label>
           `;
+          deviceElement.querySelector('input').addEventListener('change', (event) => {
+            const pin = event.target.getAttribute('data-pin');
+            const state = event.target.checked ? 'on' : 'off';
+            fetch('/togglePin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ pin, state })
+            }).catch(error => console.error('Erro ao enviar comando para o Arduino:', error));
+          });
         } else {
           deviceElement.innerHTML = `
             <label>${device.type.toUpperCase()}</label>
