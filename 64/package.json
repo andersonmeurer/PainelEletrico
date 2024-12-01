@@ -1,0 +1,17 @@
+{
+  "name": "64",
+  "version": "1.0.0",
+  "description": "-- Inicialize o projeto Node.js:\r npm init -y",
+  "main": "serverNode.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "firmata": "^2.3.0",
+    "johnny-five": "^2.1.0"
+  }
+}
