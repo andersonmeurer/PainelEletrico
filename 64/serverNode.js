@@ -91,27 +91,27 @@ board.on("ready", () => {
     }
 
     const config = parseConfig(data);
-    const displayConfig = config.find(device => device.display_clk && device.display_dio);
-    
+    const displayConfigs = config.filter(device => device.display_clk && device.display_dio);
 
-    // nao esta entrando aqui. Continuar a partir daqui
-    
-    //console.log(data);
-    if (displayConfig) {
-      console.log('oi ' + displayConfig.id, displayConfig.clkPin, displayConfig.dioPin);
-      const display = new Display(displayConfig.id, board, displayConfig.clkPin, displayConfig.dioPin); // Instancie o display com os pinos configurados
+    displayConfigs.forEach(displayConfig => {
+      const display = new Display(displayConfig.name, board, displayConfig.display_clk, displayConfig.display_dio); // Instancie o display com os pinos configurados
 
       wss.on('connection', function connection(ws) {
         ws.on('message', function incoming(message) {
           const data = JSON.parse(message);
+
+          console.log('DisplayId: ', display.id, ' data.id: ', data.id);
+      
+
           if (data.class === 'SensorVoltagem' && data.id === display.id) {
             display.printNumber(data.tensao);
           }
+          display.printNumber(2);
         });
 
         ws.send(JSON.stringify({ message: 'something' }));
       });
-    }
+    });
   });
 });
 
@@ -130,16 +130,10 @@ function parseConfig(config) {
       if (currentDevice) {
         devices.push(currentDevice);
       }
-      currentDevice = { name: line.slice(1, -1), devices: [] };
+      currentDevice = { name: line.slice(1, -1) };
     } else if (currentDevice) {
       const [key, value] = line.split('=');
-      if (key === 'display_clk') {
-        currentDevice.clkPin = value;
-      } else if (key === 'display_dio') {
-        currentDevice.dioPin = value;
-      } else {
-        currentDevice[key] = value;
-      }
+      currentDevice[key] = value;
     }
   });
 

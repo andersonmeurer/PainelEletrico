@@ -68,19 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
               body: JSON.stringify({ pin, state })
             }).catch(error => console.error('Erro ao enviar comando para o Arduino:', error));
           });
-        } else if (device.type === 'display_clk') {
+        } else if (device.type.includes('display')) {
           deviceElement.innerHTML = `
             <div id="display-${device.pin}" class="display">
-              DISPLAY_CLK: ${device.pin}
+              DISPLAY_CLK: ${device.pin}, DISPLAY_DIO: ${device.pin}
             </div>
           `;
-        } else if (device.type === 'display_dio') {
-          deviceElement.innerHTML = `
-            <div id="display-${device.pin}" class="display">
-              DISPLAY_DIO: ${device.pin}
-            </div>
-          `;
-        } else if (device.type !== '') {
+        } else {
           deviceElement.innerHTML = `
             <label>${device.type.toUpperCase()}</label>
           `;
