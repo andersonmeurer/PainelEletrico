@@ -12,6 +12,7 @@
   "dependencies": {
     "express": "^4.21.1",
     "firmata": "^2.3.0",
-    "johnny-five": "^2.1.0"
+    "johnny-five": "^2.1.0",
+    "ws": "^8.18.0"
   }
 }

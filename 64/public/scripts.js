@@ -68,7 +68,19 @@ document.addEventListener('DOMContentLoaded', () => {
               body: JSON.stringify({ pin, state })
             }).catch(error => console.error('Erro ao enviar comando para o Arduino:', error));
           });
-        } else {
+        } else if (device.type === 'display_clk') {
+          deviceElement.innerHTML = `
+            <div id="display-${device.pin}" class="display">
+              DISPLAY_CLK: ${device.pin}
+            </div>
+          `;
+        } else if (device.type === 'display_dio') {
+          deviceElement.innerHTML = `
+            <div id="display-${device.pin}" class="display">
+              DISPLAY_DIO: ${device.pin}
+            </div>
+          `;
+        } else if (device.type !== '') {
           deviceElement.innerHTML = `
             <label>${device.type.toUpperCase()}</label>
           `;
@@ -78,4 +90,21 @@ document.addEventListener('DOMContentLoaded', () => {
       modulesContainer.appendChild(moduleElement);
     });
   }
+
+  // Configurar WebSocket para receber dados do display
+  const ws = new WebSocket('ws://localhost:8080');
+
+  ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    if (data.class === 'SensorVoltagem') {
+      const displayElement = document.getElementById(`display-${data.id}`);
+      if (displayElement) {
+        displayElement.textContent = `Tensão: ${data.tensao}`;
+      }
+    }
+  };
+
+  ws.onerror = function(error) {
+    console.error('WebSocket error:', error);
+  };
 });
