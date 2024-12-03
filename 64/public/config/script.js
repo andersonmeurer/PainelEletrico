@@ -1,6 +1,6 @@
 const modules = [];
 const usedPins = new Set();
-const analogPins = { 82: 'A15', 83: 'A14', 84: 'A13', 85: 'A12', 86: 'A11', 87: 'A10', 88: 'A9', 89: 'A8', 90: 'A7', 91: 'A6', 92: 'A5', 93: 'A4', 94: 'A3', 95: 'A2', 96: 'A1', 97: 'A0' };
+const analogPins = { 69: 'A15', 68: 'A14', 67: 'A13', 66: 'A12', 65: 'A11', 64: 'A10', 63: 'A9', 62: 'A8', 61: 'A7', 60: 'A6', 59: 'A5', 58: 'A4', 57: 'A3', 56: 'A2', 55: 'A1', 54: 'A0' };
 
 function addModule() {
   const moduleName = document.getElementById('moduleName').value;

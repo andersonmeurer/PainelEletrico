@@ -9,82 +9,52 @@ class SensorCorrente {
     this.pin = pin;
     this.wss = wss; // Armazena a instância do WebSocket Server
     this.count = 0;
+    this.somaDasCorrentes = 0;
 
-    console.log(`SensorCorrente{id:${id} pin: ${pin}}`);
+    console.log(`Sensor-Corrente{id:${id}, pin: ${pin}}`);
 
-    this.board.on("ready", () => {
-      this.iniciarLeitura(wss, id, pin);
-    });
+    this.iniciarLeitura(wss, id, pin);
   }
 
   iniciarLeitura(wss, id, pin) {
-    // https://www.youtube.com/watch?v=4GlKsWehGP4
-    // Inicializa o sensor
-    //const sensor = new five.Pin(this.pin, "analog");
-    const sensor = new five.Pin(this.pin, 2, 100);
+    console.log(`Sensor-Corrente{id:${id}, pin: ${this.pin}}`);
+    const sensor = new five.Sensor({ pin: this.pin, freq: 500 });
 
-    let voltage = 0;
-    let somaDasCorrentes = 0;
+    sensor.on("data", () => {
 
-    sensor.read((error, value) => {
-      this.somaDasCorrentes += value;
+      console.log('Sensor de Corrente: ', sensor.value);
+
+      this.somaDasCorrentes += sensor.value;
       this.count++;
 
-      if (this.count >= AMOSTRAS) {
-        let valor = calculaCorrente(this.somaDasCorrentes / this.count);//filtro digital
+      if (this.count >= 100) { // Número de amostras para média
+        console.log(`Soma das correntes: ${this.somaDasCorrentes}`);
+        
+        let valor = this.calculaCorrente(this.somaDasCorrentes / this.count); // Filtro digital
         this.count = 0;
         this.somaDasCorrentes = 0;
+
+        if (wss && wss.clients) {
+          const dados = {
+            class: `SensorCorrente`,
+            type: `corrente${id}`,
+            id: id,
+            corrente: valor.toFixed(2)
+          };
+
+          wss.clients.forEach(function (server) {
+            server.send(JSON.stringify(dados));
+          });
+        }
       }
     });
+  }
 
-    let tensaoDC = 12.000; // Defina aqui a tensão DC que você está usando para alimentar seu circuito
-    let corrente = 0;
-    const SENSIBILIDADE_A30 = 0.066;
-    const SENSIBILIDADE_A20 = 0.100;
-    const SENSIBILIDADE_A5 = 0.185;
-    const AMOSTRAS = 50;
-    const calc = (5.000) / 1023.000 * SENSIBILIDADE_A5;
-
-    function calculaCorrente(media) {
-      //console.log(`media: ${media}`);
-      let amperes = (508 - media) * (5.000) / 1023.000 * SENSIBILIDADE_A5;
-      if (media > 508) {
-        amperes = (media - 508) * (5.000) / 1023.000 * SENSIBILIDADE_A5;
-      }
-      //console.log(`Corrente: ${amperes}`);
-      if (amperes < 0) {
-        amperes = amperes * (-1);
-      }
-      let volts = (amperes - tensaoDC);
-
-      if (volts < 0) {
-        volts = volts * (-1);
-      }
-
-      if (amperes > 1) {
-        amperes = amperes.toFixed(3) + " A";
-      } else {
-        amperes = amperes.toFixed(3) + " mA";
-      }
-
-
-      // Exibir os valores no console
-      // Enviar dados para o frontend via WebSocket
-      if (wss && wss.clients) {
-        const dados = {
-          class: 'SensorCorrente',
-          type: `corrente${id}`,
-          id: id,
-          corrente: amperes,
-//          tensao: volts.toFixed(2)
-        };
-
-        wss.clients.forEach(function (server) {
-          //console.log("Enviando para o front-end: " + JSON.stringify(dados));
-          server.send(JSON.stringify(dados));
-        });
-      }
-    }
+  calculaCorrente(valor) {
+    const tensaoDC = 12.000; // Defina aqui a tensão DC que você está usando para alimentar seu circuito
+    const SENSIBILIDADE_A30 = 0.066; // Sensibilidade do sensor ACS712-30A
+    const corrente = (valor - (tensaoDC / 2)) / SENSIBILIDADE_A30;
+    return corrente;
   }
 }
 

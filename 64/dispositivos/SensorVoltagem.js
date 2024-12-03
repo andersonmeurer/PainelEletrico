@@ -9,28 +9,31 @@ class SensorVoltagem {
     this.wss = wss;
     this.pin = pin;
 
-    this.board.on("ready", () => {
-      const sensor = new five.Pin({ pin: this.pin, freq: 2500 });
+    console.log(`Sensor-Voltagem{id:${id}, pin: ${pin}}`);
 
-      sensor.read((error, value) => {
-        let adcVoltage = (value * 5.0) / 1023.0;
-        let inVoltage = adcVoltage * (30000.0 + 7500.0) / 7500.0;
+    const sensor = new five.Sensor({ pin: this.pin, freq: 500 });
 
-        if (wss && wss.clients) {
-          const dados = {
-            class: `SensorVoltagem`,
-            type: `voltagem${id}`,
-            id: id,
-            tensao: inVoltage.toFixed(2)
-          };
-  
-          wss.clients.forEach(function (server) {
-            server.send(JSON.stringify(dados));
-          });
-        }
-      });
+    sensor.on("data", () => {
+
+      console.log('Sensor de Voltagem: ', sensor.value);
+
+      let adcVoltage = (sensor.value * 5.0) / 1023.0;
+      let inVoltage = adcVoltage * (30000.0 + 7500.0) / 7500.0;
+
+      if (wss && wss.clients) {
+        const dados = {
+          class: `SensorVoltagem`,
+          type: `voltagem${id}`,
+          id: id,
+          tensao: inVoltage.toFixed(2)
+        };
+
+        wss.clients.forEach(function (server) {
+          server.send(JSON.stringify(dados));
+        });
+      }
     });
-  }
+  };
 }
 
 module.exports = SensorVoltagem;

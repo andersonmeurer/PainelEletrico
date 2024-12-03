@@ -3,12 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const five = require('johnny-five');
 const WebSocket = require('ws');
-const Display = require(path.join(__dirname, 'dispositivos', 'Display')); // Importe a classe Display
+const Display = require(path.join(__dirname, 'dispositivos', 'Display'));
+const SensorVoltagem = require(path.join(__dirname, 'dispositivos', 'SensorVoltagem'));
+const SensorCorrente = require(path.join(__dirname, 'dispositivos', 'SensorCorrente'));
 
 const app = express();
 const PORT = 3000;
 
-// Variável global para o caminho do arquivo
 const configFilePath = path.join(__dirname, 'config', 'pinos.properties');
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -61,7 +62,6 @@ app.post('/togglePin', (req, res) => {
   }
 });
 
-// Rota para a página inicial
 app.get('/config', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'config/config.html'));
 });
@@ -73,7 +73,6 @@ app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
 
-//------------------------------------------------------------ johnny-five
 let isBoardReady = false;
 const board = new five.Board();
 
@@ -83,7 +82,6 @@ board.on("ready", () => {
 
   const wss = new WebSocket.Server({ port: 8080 });
 
-  // Ler a configuração do arquivo pinos.properties
   fs.readFile(configFilePath, 'utf8', (err, data) => {
     if (err) {
       console.error('Erro ao ler o arquivo de configuração:', err);
@@ -91,26 +89,43 @@ board.on("ready", () => {
     }
 
     const config = parseConfig(data);
-    const displayConfigs = config.filter(device => device.display_clk && device.display_dio);
 
-    displayConfigs.forEach(displayConfig => {
-      const display = new Display(displayConfig.name, board, displayConfig.display_clk, displayConfig.display_dio); // Instancie o display com os pinos configurados
+    config.forEach(device => {
+      if (device.sensorcorrente) {
+        device.sensorcorrente_id = generateId(); // Gerar um ID único de 3 dígitos para sensor de corrente
+        console.log('Instanciando sensor de corrente: {Id: ', device.sensorcorrente_id, 'Pin: ', device.sensorcorrente, 'Name:', device.name, '}');
+        new SensorCorrente(device.sensorcorrente_id, board, device.sensorcorrente, wss);
+      }
 
-      wss.on('connection', function connection(ws) {
-        ws.on('message', function incoming(message) {
-          const data = JSON.parse(message);
+      if (device.sensorvoltagem) {
+        device.sensorvoltagem_id = generateId(); // Gerar um ID único de 3 dígitos para sensor de voltagem
+        console.log('Instanciando sensor de voltagem: {Id: ', device.sensorvoltagem_id, ' Name: ', device.name, ' Pin: ', device.sensorvoltagem, '}');
+        new SensorVoltagem(device.sensorvoltagem_id, board, wss, device.sensorvoltagem);
+      }
 
-          console.log('DisplayId: ', display.id, ' data.id: ', data.id);
-      
+      if (device.rele) {
+        device.rele_id = generateId(); // Gerar um ID único de 3 dígitos para relé
+        console.log('Instanciando relé: {Id:', device.rele_id, ' Name: ', device.name, 'Pin: ',  device.rele, '}');
+        // Adicione a lógica para instanciar o relé aqui, se necessário
+      }
 
-          if (data.class === 'SensorVoltagem' && data.id === display.id) {
-            display.printNumber(data.tensao);
-          }
-          display.printNumber(2);
+      if (device.display_clk && device.display_dio) {
+        device.display_id = generateId(); // Gerar um ID único de 3 dígitos para display
+        console.log('Instanciando display: {Id:', device.display_id,'Name:', device.name,'{clk:',device.display_clk,',dio:', device.display_dio,'}}');
+        const display = new Display(device.display_id, board, device.display_clk, device.display_dio);
+
+        wss.on('connection', function connection(ws) {
+          ws.on('message', function incoming(message) {
+            const data = JSON.parse(message);
+
+            if (data.class === 'SensorVoltagem' && data.id === display.id) {
+              display.printNumber(data.tensao);
+            }
+          });
+
+          ws.send(JSON.stringify({ message: 'something' }));
         });
-
-        ws.send(JSON.stringify({ message: 'something' }));
-      });
+      }
     });
   });
 });
@@ -118,7 +133,6 @@ board.on("ready", () => {
 board.on("error", (err) => {
   console.error("Erro na inicialização da placa:", err);
 });
-//------------------------------------------------------------ johnny-five
 
 function parseConfig(config) {
   const devices = [];
@@ -142,4 +156,8 @@ function parseConfig(config) {
   }
 
   return devices;
+}
+
+function generateId() {
+  return Math.floor(100 + Math.random() * 900).toString(); // Gera um ID de 3 dígitos
 }

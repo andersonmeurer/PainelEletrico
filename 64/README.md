@@ -7,7 +7,12 @@ express: Framework para criar aplicações web.
 johnny-five: Biblioteca para controle de hardware com JavaScript.
 firmata: Protocolo para comunicação entre o Johnny-Five e o microcontrolador (ex.: Arduino).
 */
-npm install express@4.17.1 johnny-five@2.1.0 firmata@2.3.0 serialport@9.0.0 ws@8.18.0
+npm install express@4.17.1
+npm install johnny-five@2.1.0
+npm install firmata@2.3.0
+npm install serialport@9.0.0
+npm install ws@8.18.0
+npm install uuid
 
 
 
