@@ -1,6 +1,7 @@
-//SENSOR DE CORRENTE https://www.usinainfo.com.br/blog/projeto-medindo-corrente-com-o-sensor-acs712-e-o-arduino/
-//https://www.youtube.com/watch?v=4GlKsWehGP4
+const CLASS_NAME = "Sensor-Corrente";
+
 const five = require("johnny-five");
+const WebSocket = require('ws');
 
 class SensorCorrente {
   constructor(id, board, pin, wss) {
@@ -11,39 +12,33 @@ class SensorCorrente {
     this.count = 0;
     this.somaDasCorrentes = 0;
 
-    console.log(`Sensor-Corrente{id:${id}, pin: ${pin}}`);
-
-    this.iniciarLeitura(wss, id, pin);
-  }
-
-  iniciarLeitura(wss, id, pin) {
-    console.log(`Sensor-Corrente{id:${id}, pin: ${this.pin}}`);
-    const sensor = new five.Sensor({ pin: this.pin, freq: 500 });
+    console.log(`${CLASS_NAME}::{id:${id}, pin: ${this.pin}}`);
+    const sensor = new five.Sensor({ pin: this.pin, freq: 3000 });
+    let valorFiltrado = 0;
 
     sensor.on("data", () => {
-
-      console.log('Sensor de Corrente: ', sensor.value);
-
       this.somaDasCorrentes += sensor.value;
       this.count++;
 
-      if (this.count >= 100) { // Número de amostras para média
-        console.log(`Soma das correntes: ${this.somaDasCorrentes}`);
-        
-        let valor = this.calculaCorrente(this.somaDasCorrentes / this.count); // Filtro digital
+      if (this.count >= 1) { // Número de amostras para média
+        let valor = this.somaDasCorrentes / this.count;
+        valorFiltrado = this.calculaCorrente(valor); // Filtro digital
         this.count = 0;
         this.somaDasCorrentes = 0;
 
-        if (wss && wss.clients) {
+        if (this.wss && this.wss.clients) {
           const dados = {
             class: `SensorCorrente`,
             type: `corrente${id}`,
             id: id,
-            corrente: valor.toFixed(2)
+            value: valor.toFixed(2)
           };
 
-          wss.clients.forEach(function (server) {
-            server.send(JSON.stringify(dados));
+          this.wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              console.log(`${CLASS_NAME}::Sending: ` + JSON.stringify(dados));
+              client.send(JSON.stringify(dados));
+            }
           });
         }
       }

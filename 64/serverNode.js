@@ -1,13 +1,18 @@
+const CLASS_NAME = "Server-Node";
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const five = require('johnny-five');
+const http = require('http');
 const WebSocket = require('ws');
 const Display = require(path.join(__dirname, 'dispositivos', 'Display'));
 const SensorVoltagem = require(path.join(__dirname, 'dispositivos', 'SensorVoltagem'));
 const SensorCorrente = require(path.join(__dirname, 'dispositivos', 'SensorCorrente'));
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 const PORT = 3000;
 
 const configFilePath = path.join(__dirname, 'config', 'pinos.properties');
@@ -69,19 +74,45 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`${CLASS_NAME}::Servidor HTTP e WebSocket rodando em http://localhost:${PORT}`);
+});
+
+wss.on('connection', function connection(ws, req) {
+  const clientAddress = req.socket.remoteAddress;
+  const clientPort = req.socket.remotePort;
+
+  console.log(`${CLASS_NAME}::Novo cliente conectado: ${clientAddress}:${clientPort}`);
+
+  ws.on('message', function incoming(message) {
+    console.log(`${CLASS_NAME}::Mensagem recebida do cliente:`, message);
+    const data = JSON.parse(message);
+    console.log(`${CLASS_NAME}::Dados recebidos:`, data);
+
+    // Processar a mensagem recebida
+    if (data.class === 'SensorVoltagem') {
+      console.log(`Tensão recebida do sensor ${data.id}: ${data.tensao}`);
+      // Adicione aqui a lógica para processar a tensão recebida
+    }
+  });
+
+  ws.send(JSON.stringify({ message: 'Conexão estabelecida com sucesso' }));
 });
 
 let isBoardReady = false;
 const board = new five.Board();
 
 board.on("ready", () => {
-  console.log("Johnny-Five está pronto!");
+  console.log(`${CLASS_NAME}::Johnny-Five está pronto!`);
   isBoardReady = true;
+  loadFile();
+});
 
-  const wss = new WebSocket.Server({ port: 8080 });
+board.on("error", (err) => {
+  console.error("Erro na inicialização da placa:", err);
+});
 
+function loadFile() {
   fs.readFile(configFilePath, 'utf8', (err, data) => {
     if (err) {
       console.error('Erro ao ler o arquivo de configuração:', err);
@@ -93,46 +124,30 @@ board.on("ready", () => {
     config.forEach(device => {
       if (device.sensorcorrente) {
         device.sensorcorrente_id = generateId(); // Gerar um ID único de 3 dígitos para sensor de corrente
-        console.log('Instanciando sensor de corrente: {Id: ', device.sensorcorrente_id, 'Pin: ', device.sensorcorrente, 'Name:', device.name, '}');
+        console.log(`${CLASS_NAME}::Instanciando sensor de corrente: {Id: `, device.sensorcorrente_id, 'Pin: ', device.sensorcorrente, 'Name:', device.name, '}');
         new SensorCorrente(device.sensorcorrente_id, board, device.sensorcorrente, wss);
       }
 
       if (device.sensorvoltagem) {
         device.sensorvoltagem_id = generateId(); // Gerar um ID único de 3 dígitos para sensor de voltagem
-        console.log('Instanciando sensor de voltagem: {Id: ', device.sensorvoltagem_id, ' Name: ', device.name, ' Pin: ', device.sensorvoltagem, '}');
+        console.log(`${CLASS_NAME}::Instanciando sensor de voltagem: {Id: `, device.sensorvoltagem_id, ' Name: ', device.name, ' Pin: ', device.sensorvoltagem, '}');
         new SensorVoltagem(device.sensorvoltagem_id, board, wss, device.sensorvoltagem);
       }
 
       if (device.rele) {
         device.rele_id = generateId(); // Gerar um ID único de 3 dígitos para relé
-        console.log('Instanciando relé: {Id:', device.rele_id, ' Name: ', device.name, 'Pin: ',  device.rele, '}');
+        console.log(`${CLASS_NAME}::Instanciando relé: {Id:`, device.rele_id, ' Name: ', device.name, 'Pin: ', device.rele, '}');
         // Adicione a lógica para instanciar o relé aqui, se necessário
       }
 
       if (device.display_clk && device.display_dio) {
         device.display_id = generateId(); // Gerar um ID único de 3 dígitos para display
-        console.log('Instanciando display: {Id:', device.display_id,'Name:', device.name,'{clk:',device.display_clk,',dio:', device.display_dio,'}}');
+        console.log(`${CLASS_NAME}::Instanciando display: {Id:`, device.display_id, 'Name:', device.name, '{clk:', device.display_clk, ',dio:', device.display_dio, '}}');
         const display = new Display(device.display_id, board, device.display_clk, device.display_dio);
-
-        wss.on('connection', function connection(ws) {
-          ws.on('message', function incoming(message) {
-            const data = JSON.parse(message);
-
-            if (data.class === 'SensorVoltagem' && data.id === display.id) {
-              display.printNumber(data.tensao);
-            }
-          });
-
-          ws.send(JSON.stringify({ message: 'something' }));
-        });
       }
     });
   });
-});
-
-board.on("error", (err) => {
-  console.error("Erro na inicialização da placa:", err);
-});
+}
 
 function parseConfig(config) {
   const devices = [];

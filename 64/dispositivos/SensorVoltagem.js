@@ -8,24 +8,28 @@ class SensorVoltagem {
     this.board = board;
     this.wss = wss;
     this.pin = pin;
+    this.valorFiltrado = 0;
+    this.alpha = 0.1; // Constante de suavização
 
     console.log(`Sensor-Voltagem{id:${id}, pin: ${pin}}`);
 
-    const sensor = new five.Sensor({ pin: this.pin, freq: 500 });
+    const sensor = new five.Sensor({ pin: this.pin, freq: 3000 });
 
     sensor.on("data", () => {
-
-      console.log('Sensor de Voltagem: ', sensor.value);
 
       let adcVoltage = (sensor.value * 5.0) / 1023.0;
       let inVoltage = adcVoltage * (30000.0 + 7500.0) / 7500.0;
 
+      // Aplicar filtro passa-baixa
+      this.valorFiltrado = this.alpha * inVoltage + (1 - this.alpha) * this.valorFiltrado;
+
       if (wss && wss.clients) {
+        //console.log('Sensor de Voltagem: ', this.valorFiltrado.toFixed(2));
         const dados = {
           class: `SensorVoltagem`,
           type: `voltagem${id}`,
           id: id,
-          tensao: inVoltage.toFixed(2)
+          value: this.valorFiltrado.toFixed(2)
         };
 
         wss.clients.forEach(function (server) {

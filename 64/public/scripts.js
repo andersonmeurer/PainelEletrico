@@ -1,13 +1,17 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', (event) => {
+  console.log('DOM completamente carregado e analisado');
+
   // Carregar configurações já salvas
   fetch('/loadConfig')
     .then(response => {
+      console.log('Resposta do servidor recebida:', response);
       if (!response.ok) {
         throw new Error('Arquivo não encontrado');
       }
       return response.text();
     })
     .then(config => {
+      console.log('Configurações carregadas:', config);
       const modules = parseConfig(config);
       renderModules(modules);
     })
@@ -85,20 +89,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Configurar WebSocket para receber dados do display
-  const ws = new WebSocket('ws://localhost:8080');
+  const ws = new WebSocket("http://localhost:3000/");
 
-  ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    if (data.class === 'SensorVoltagem') {
-      const displayElement = document.getElementById(`display-${data.id}`);
-      if (displayElement) {
-        displayElement.textContent = `Tensão: ${data.tensao}`;
-      }
-    }
+  ws.onopen = () => {
+    console.log('Conectado ao servidor WebSocket');
   };
 
-  ws.onerror = function(error) {
-    console.error('WebSocket error:', error);
+  ws.onerror = (error) => {
+    console.error('Erro no WebSocket:', error);
+  };
+
+  ws.onclose = () => {
+    console.log('Conexão com o servidor WebSocket fechada');
+  };
+
+  ws.onmessage = (event) => {
+    console.log('Mensagem recebida do servidor:', event.data);
+    const data = JSON.parse(event.data);
+    if (data.class === undefined) { return; }
+    const messagesContainer = document.getElementById('messages');
+    const messageElement = document.createElement('div');
+    messageElement.textContent = `Classe: ${data.class}, ID: ${data.id}, Tipo: ${data.type}, Valor: ${data.value}`;
+    messagesContainer.prepend(messageElement); // Adiciona a nova mensagem no topo
   };
 });
