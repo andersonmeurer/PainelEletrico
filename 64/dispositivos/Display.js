@@ -1,3 +1,5 @@
+const CLASS_NAME = "Display";
+
 const five = require('johnny-five');
 
 const SEGMENTS = {
@@ -24,7 +26,7 @@ class Display {
     this.clk = new five.Pin(clkPin);
     this.dio = new five.Pin(dioPin);
 
-    console.log(`Display{id: ${id} dioPin: ${dioPin} clkPin: ${clkPin}}`);
+    console.log(`${CLASS_NAME}::{id: ${id} dioPin: ${dioPin} clkPin: ${clkPin}}`);
 
     board.on("ready", () => {
       this.initializeDisplay();
@@ -39,9 +41,11 @@ class Display {
       this.writeByte(0xff); // Write all segments on
     }
     this.stop();
+    this.printNumber(1000); // Inicializa o display com o número 1000
   }
 
   printNumber(number) {
+    console.log(`${CLASS_NAME}::{id: ${this.id}}::printNumber(${number})`);
     number = number.toString().replace(/\./g, '');
     const bytes = Array.from(number.toString().padStart(4, '0')).map(digit => SEGMENTS[digit]);
     this.sendCommand(0x40); // Set auto increment mode

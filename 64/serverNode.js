@@ -1,5 +1,8 @@
 const CLASS_NAME = "Server-Node";
 
+const SENSOR_CORRENTE = 'SensorCorrente';
+const SENSOR_VOLTAGEM = 'SensorVoltagem';
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -78,33 +81,31 @@ server.listen(PORT, () => {
   console.log(`${CLASS_NAME}::Servidor HTTP e WebSocket rodando em http://localhost:${PORT}`);
 });
 
-wss.on('connection', function connection(ws, req) {
-  const clientAddress = req.socket.remoteAddress;
-  const clientPort = req.socket.remotePort;
+wss.on('connection', (ws) => {
 
-  console.log(`${CLASS_NAME}::Novo cliente conectado: ${clientAddress}:${clientPort}`);
+  console.log(`${CLASS_NAME}::Cliente conectado`);
 
-  ws.on('message', function incoming(message) {
-    console.log(`${CLASS_NAME}::Mensagem recebida do cliente:`, message);
-    const data = JSON.parse(message);
-    console.log(`${CLASS_NAME}::Dados recebidos:`, data);
+  // Receber mensagens dos clientes
+  ws.on('message', (message) => {
+      console.log(`${CLASS_NAME}::Mensagem recebida do cliente:${message.toString()}`);
 
-    // Processar a mensagem recebida
-    if (data.class === 'SensorVoltagem') {
-      console.log(`Tensão recebida do sensor ${data.id}: ${data.tensao}`);
-      // Adicione aqui a lógica para processar a tensão recebida
-    }
+      // Opcional: enviar uma resposta ao cliente
+      //ws.send(`Mensagem recebida: ${message}`);
   });
 
-  ws.send(JSON.stringify({ message: 'Conexão estabelecida com sucesso' }));
+  // Evento para lidar com desconexão
+  ws.on('close', () => {
+      console.log('${CLASS_NAME}::Cliente desconectado');
+  });
+
+  // Evento para lidar com erros
+  ws.on('error', (error) => {
+      console.error('${CLASS_NAME}::Erro no WebSocket:', error);
+  });
 });
 
 let isBoardReady = false;
 const board = new five.Board();
-
-board.on("error", (err) => {
-  console.error("Erro na inicialização da placa:", err);
-});
 
 board.on("ready", () => {
   console.log(`${CLASS_NAME}::Johnny-Five está pronto!`);
@@ -112,10 +113,16 @@ board.on("ready", () => {
   boardOn_loadFile();
 });
 
+board.on("error", (err) => {
+  console.error("${CLASS_NAME}::Erro na inicialização da placa:", err);
+});
+
+const displays = [];
+
 function boardOn_loadFile() {
   fs.readFile(configFilePath, 'utf8', (err, data) => {
     if (err) {
-      console.error('Erro ao ler o arquivo de configuração:', err);
+      console.error('${CLASS_NAME}::Erro ao ler o arquivo de configuração:', err);
       return;
     }
 
@@ -138,6 +145,7 @@ function boardOn_loadFile() {
         device.display_id = board_on_loadFile_generateId(); // Gerar um ID único de 3 dígitos para display
         console.log(`${CLASS_NAME}::Instanciando display: {Id:`, device.display_id, 'Name:', device.name, '{clk:', device.display_clk, ',dio:', device.display_dio, '}}');
         const display = new Display(device.display_id, board, device.display_clk, device.display_dio);
+        displays.push(display);
       }
     });
   });

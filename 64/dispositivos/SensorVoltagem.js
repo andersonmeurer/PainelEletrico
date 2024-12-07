@@ -1,6 +1,8 @@
-// SENSOR DE VOLTAGEM: https://lastminuteengineers.com/voltage-sensor-arduino-tutorial/
+const CLASS_NAME = "Sensor-Voltagem";
 
 const five = require("johnny-five");
+const WebSocket = require('ws');
+const ws = new WebSocket('ws://localhost:3000');
 
 class SensorVoltagem {
   constructor(id, board, wss, pin) {
@@ -8,36 +10,41 @@ class SensorVoltagem {
     this.board = board;
     this.wss = wss;
     this.pin = pin;
-    this.valorFiltrado = 0;
-    this.alpha = 0.1; // Constante de suavização
 
-    console.log(`Sensor-Voltagem{id:${id}, pin: ${pin}}`);
-
-    const sensor = new five.Sensor({ pin: this.pin, freq: 3000 });
+    console.log(`${CLASS_NAME}::{id:${id}, pin: ${this.pin}}`);
+    const sensor = new five.Sensor({ pin: this.pin, freq: 2000 });
 
     sensor.on("data", () => {
+      const valor = sensor.value;
 
-      let adcVoltage = (sensor.value * 5.0) / 1023.0;
-      let inVoltage = adcVoltage * (30000.0 + 7500.0) / 7500.0;
-
-      // Aplicar filtro passa-baixa
-      this.valorFiltrado = this.alpha * inVoltage + (1 - this.alpha) * this.valorFiltrado;
-
-      if (wss && wss.clients) {
-        //console.log('Sensor de Voltagem: ', this.valorFiltrado.toFixed(2));
+      if (this.wss && this.wss.clients) {
         const dados = {
           class: `SensorVoltagem`,
-          type: `voltagem${id}`,
-          id: id,
-          value: this.valorFiltrado.toFixed(2)
+          id: this.id,
+          value: valor.toFixed(2)
         };
 
-        wss.clients.forEach(function (server) {
-          server.send(JSON.stringify(dados));
+        this.wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            //console.log(`${CLASS_NAME}::Sending: ` + JSON.stringify(dados));
+            client.send(JSON.stringify(dados));
+          }
         });
       }
     });
-  };
+  }
 }
+
+ws.on('open', () => {
+  console.log(`${CLASS_NAME}:: Conexão estabelecida com o servidor!`);
+
+  setInterval(() => {
+      ws.send(`${CLASS_NAME}:: teste`);
+  }, 3000);
+});
+
+ws.on('message', (data) => {
+  console.log(`${CLASS_NAME}:: Cliente enviando ao servidor: ${data.toString()}`);
+});
 
 module.exports = SensorVoltagem;

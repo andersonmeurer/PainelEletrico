@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
   }
 
-  const ws = new WebSocket("http://localhost:3000/");
+  const ws = new WebSocket("ws://localhost:3000");
 
   ws.onopen = () => {
     console.log('Conectado ao servidor WebSocket');
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     if (data.class === undefined) { return; }
     const messagesContainer = document.getElementById('messages');
     const messageElement = document.createElement('div');
-    messageElement.textContent = `Classe: ${data.class}, ID: ${data.id}, Tipo: ${data.type}, Valor: ${data.value}`;
+    messageElement.textContent = `Classe: ${data.class}, ID: ${data.id}, Valor: ${data.value}`;
     messagesContainer.prepend(messageElement); // Adiciona a nova mensagem no topo
   };
 });
