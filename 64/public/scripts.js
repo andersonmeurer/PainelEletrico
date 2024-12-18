@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     if (data.class === undefined) { return; }
     const messagesContainer = document.getElementById('messages');
     const messageElement = document.createElement('div');
-    messageElement.textContent = `Classe: ${data.class}, ID: ${data.id}, Valor: ${data.value}`;
+    messageElement.textContent = `Classe: ${data.class}, Valor:${data.value}`;
     messagesContainer.prepend(messageElement); // Adiciona a nova mensagem no topo
   };
 });

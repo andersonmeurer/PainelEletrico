@@ -16,8 +16,8 @@ const SEGMENTS = {
 };
 
 class Display {
-  constructor(id, board, clkPin, dioPin) {
-    this.id = id;
+  constructor(moduleName, board, clkPin, dioPin) {
+    this.moduleName = moduleName;
     this.board = board;
     this.clkPin = clkPin;
     this.dioPin = dioPin;
@@ -26,7 +26,7 @@ class Display {
     this.clk = new five.Pin(clkPin);
     this.dio = new five.Pin(dioPin);
 
-    console.log(`${CLASS_NAME}::{id: ${id} dioPin: ${dioPin} clkPin: ${clkPin}}`);
+    console.log(`${CLASS_NAME}::{module:${moduleName}, dioPin:${dioPin}, clkPin:${clkPin}}`);
 
     board.on("ready", () => {
       this.initializeDisplay();
@@ -45,7 +45,7 @@ class Display {
   }
 
   printNumber(number) {
-    console.log(`${CLASS_NAME}::{id: ${this.id}}::printNumber(${number})`);
+    console.log(`${CLASS_NAME}::{moduleName:${this.moduleName}}::printNumber(${number})`);
     number = number.toString().replace(/\./g, '');
     const bytes = Array.from(number.toString().padStart(4, '0')).map(digit => SEGMENTS[digit]);
     this.sendCommand(0x40); // Set auto increment mode

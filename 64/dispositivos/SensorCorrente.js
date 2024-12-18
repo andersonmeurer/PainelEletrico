@@ -1,20 +1,20 @@
-const CLASS_NAME = "Sensor-Corrente";
+const CLASS_NAME = "SensorCorrente";
 
 const five = require("johnny-five");
 const WebSocket = require('ws');
 const ws = new WebSocket('ws://localhost:3000');
 
 class SensorCorrente {
-  constructor(id, board, pin, wss) {
-    this.id = id;
+  constructor(moduleName, board, pin, wss) {
+    this.moduleName = moduleName;
     this.board = board;
     this.pin = pin;
     this.wss = wss; // Armazena a instância do WebSocket Server
     this.count = 0;
     this.somaDasCorrentes = 0;
 
-    console.log(`${CLASS_NAME}::{id:${id}, pin: ${this.pin}}`);
-    const sensor = new five.Sensor({ pin: this.pin, freq: 2000 });
+    console.log(`${CLASS_NAME}::{moduleName:${moduleName}, pin:${pin}}`);
+    const sensor = new five.Sensor({ pin: this.pin, freq: 3000 });
     let valorFiltrado = 0;
 
     sensor.on("data", () => {
@@ -29,14 +29,14 @@ class SensorCorrente {
 
         if (this.wss && this.wss.clients) {
           const dados = {
-            class: `SensorCorrente`,
-            id: this.id,
+            moduleName: this.moduleName,
+            class: CLASS_NAME,
             value: valorFiltrado.toFixed(2)
           };
 
           this.wss.clients.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-              //console.log(`${CLASS_NAME}::Sending: ` + JSON.stringify(dados));
+              console.log(`${CLASS_NAME}::Sending: ` + JSON.stringify(dados));
               client.send(JSON.stringify(dados));
             }
           });
@@ -55,14 +55,10 @@ class SensorCorrente {
 
 ws.on('open', () => {
   console.log(`${CLASS_NAME}:: Conexão estabelecida com o servidor!`);
-
-  setInterval(() => {
-      ws.send(`${CLASS_NAME}:: teste`);
-  }, 3000);
 });
 
 ws.on('message', (data) => {
-  console.log(`${CLASS_NAME}:: Cliente enviando ao servidor: ${data.toString()}`);
+  ws.send(data);
 });
 
 module.exports = SensorCorrente;

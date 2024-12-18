@@ -81,27 +81,34 @@ server.listen(PORT, () => {
   console.log(`${CLASS_NAME}::Servidor HTTP e WebSocket rodando em http://localhost:${PORT}`);
 });
 
-wss.on('connection', (ws) => {
+wss.on('connection', function connection(ws, req) {
+  const clientAddress = req.socket.remoteAddress;
+  const clientPort = req.socket.remotePort;
 
-  console.log(`${CLASS_NAME}::Cliente conectado`);
+  console.log(`${CLASS_NAME}::Novo cliente conectado: ${clientAddress}:${clientPort}`);
 
-  // Receber mensagens dos clientes
-  ws.on('message', (message) => {
-      console.log(`${CLASS_NAME}::Mensagem recebida do cliente:${message.toString()}`);
+  ws.on('message', function incoming(message) {
+    console.log(`${CLASS_NAME}::Mensagem recebida do cliente:`, message.toString());
+    try {
+      const data = JSON.parse(message);
+      console.log(`${CLASS_NAME}::Dados recebidos:`, data);
 
-      // Opcional: enviar uma resposta ao cliente
-      //ws.send(`Mensagem recebida: ${message}`);
+      // Processar a mensagem recebida
+      if (data.class === SENSOR_VOLTAGEM || data.class === SENSOR_CORRENTE) {
+        console.log(`Valor recebido do sensor ${data.id}: ${data.value}`);
+        // Enviar o valor para o display correspondente
+        displays.forEach(display => {
+          if (display.moduleName === data.moduleName) {
+            display.printNumber(data.value);
+          }
+        });
+      }
+    } catch (error) {
+      console.error(`${CLASS_NAME}::Erro ao processar a mensagem:`, error);
+    }
   });
 
-  // Evento para lidar com desconexão
-  ws.on('close', () => {
-      console.log('${CLASS_NAME}::Cliente desconectado');
-  });
-
-  // Evento para lidar com erros
-  ws.on('error', (error) => {
-      console.error('${CLASS_NAME}::Erro no WebSocket:', error);
-  });
+  ws.send(JSON.stringify({ message: 'Conexão estabelecida com sucesso' }));
 });
 
 let isBoardReady = false;
@@ -129,22 +136,25 @@ function boardOn_loadFile() {
     const config = boardOn_loadFile_parseConfig(data);
 
     config.forEach(device => {
+      if (!device.sensorcorrente && !device.sensorvoltagem) {
+        console.error(`${CLASS_NAME}::Erro: O módulo ${device.name} deve ter pelo menos um sensor de corrente ou um sensor de voltagem.`);
+        console.error('Configuração inválida:', device);
+        return;
+      }
+
       if (device.sensorcorrente) {
-        device.sensorcorrente_id = board_on_loadFile_generateId(); // Gerar um ID único de 3 dígitos para sensor de corrente
-        console.log(`${CLASS_NAME}::Instanciando sensor de corrente: {Id: `, device.sensorcorrente_id, 'Pin: ', device.sensorcorrente, 'Name:', device.name, '}');
-        new SensorCorrente(device.sensorcorrente_id, board, device.sensorcorrente, wss);
-      } else if (device.sensorvoltagem) {
-        device.sensorvoltagem_id = board_on_loadFile_generateId(); // Gerar um ID único de 3 dígitos para sensor de voltagem
-        console.log(`${CLASS_NAME}::Instanciando sensor de voltagem: {Id: `, device.sensorvoltagem_id, ' Name: ', device.name, ' Pin: ', device.sensorvoltagem, '}');
-        new SensorVoltagem(device.sensorvoltagem_id, board, wss, device.sensorvoltagem);
-      } else if (device.rele) {
-        device.rele_id = board_on_loadFile_generateId(); // Gerar um ID único de 3 dígitos para relé
-        console.log(`${CLASS_NAME}::Instanciando relé: {Id:`, device.rele_id, ' Name: ', device.name, 'Pin: ', device.rele, '}');
-        // Adicione a lógica para instanciar o relé aqui, se necessário
-      } else if (device.display_clk && device.display_dio) {
-        device.display_id = board_on_loadFile_generateId(); // Gerar um ID único de 3 dígitos para display
-        console.log(`${CLASS_NAME}::Instanciando display: {Id:`, device.display_id, 'Name:', device.name, '{clk:', device.display_clk, ',dio:', device.display_dio, '}}');
-        const display = new Display(device.display_id, board, device.display_clk, device.display_dio);
+        console.log(`${CLASS_NAME}::Instanciando sensor de corrente: {moduleName:${device.name}, Pin:${device.sensorcorrente}}`);
+        new SensorCorrente(device.name, board, device.sensorcorrente, wss);
+      }
+
+      if (device.sensorvoltagem) {
+        console.log(`${CLASS_NAME}::Instanciando sensor de voltagem: {moduleName:${device.name}, Pin:${device.sensorvoltagem}`);
+        new SensorVoltagem(device.name, board, wss, device.sensorvoltagem);
+      }
+
+      if (device.display_clk && device.display_dio) {
+        console.log(`${CLASS_NAME}::Instanciando display: {moduleName:${device.name}, Name:${device.name}, {clk:${device.display_clk}, dio:${device.display_dio}}`);
+        const display = new Display(device.name, board, device.display_clk, device.display_dio);
         displays.push(display);
       }
     });
@@ -173,8 +183,4 @@ function boardOn_loadFile_parseConfig(config) {
   }
 
   return devices;
-}
-
-function board_on_loadFile_generateId() {
-  return Math.floor(100 + Math.random() * 900).toString(); // Gera um ID de 3 dígitos
 }
