@@ -22,3 +22,7 @@ Baixe o Visual Studio Build Tools.
 Durante a instalação, selecione:
 "C++ build tools"
 "Windows 10 SDK" (necessário para compilar extensões).
+------------------------------------------------------------------------------------------------------
+-- docker
+------------------------------------------------------------------------------------------------------
+# docker buildx build --platform linux/arm/v7 -t andersonmeurerr/painel-eletrico:0.0.0 -f Dockerfile.raspberry --push .

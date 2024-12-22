@@ -1,0 +1,29 @@
+FROM arm32v7/node:14-buster
+
+WORKDIR /app
+
+# Copy package.json and package-lock.json to the working directory
+COPY package*.json ./
+
+RUN npm install express
+
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    python3 && \
+    npm install && \
+    apt-get install -y udev
+
+COPY /dispositivos .
+COPY /public .
+COPY *.node .
+COPY . .
+
+# Expose the port the app runs on
+EXPOSE 3000
+
+CMD [ "node", "--unhandled-rejections=strict", "serverNode.js" ]
+
+
+# -- buildar e subir para dockerhub
+# docker buildx build --platform linux/arm/v7 -t andersonmeurerr/painel-eletrico:0.0.0 -f Dockerfile.raspberry --push .
