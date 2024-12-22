@@ -2,6 +2,13 @@ const modules = [];
 const usedPins = new Set();
 const analogPins = { 69: 'A15', 68: 'A14', 67: 'A13', 66: 'A12', 65: 'A11', 64: 'A10', 63: 'A9', 62: 'A8', 61: 'A7', 60: 'A6', 59: 'A5', 58: 'A4', 57: 'A3', 56: 'A2', 55: 'A1', 54: 'A0' };
 
+const deviceLabels = {
+  SensorCorrente: 'Sensor de Corrente',
+  SensorVoltagem: 'Sensor de Voltagem',
+  Rele: 'Relê',
+  Display: 'Display'
+};
+
 function addModule() {
   const moduleName = document.getElementById('moduleName').value;
   if (!moduleName) {
@@ -53,13 +60,6 @@ function updateModuleList() {
 }
 
 function createDeviceElement(moduleName, device) {
-  const deviceLabels = {
-    SensorCorrente: 'Sensor de Corrente',
-    SensorVoltagem: 'Sensor de Voltagem',
-    Rele: 'Relê',
-    Display: 'Display'
-  };
-
   if (device.type === 'Display') {
     return `
       <div class="form-group">
@@ -81,7 +81,7 @@ function createDeviceElement(moduleName, device) {
   } else if (device.type !== '') {
     return `
       <div class="form-group">
-        <label for="${moduleName}-${device.type}">${deviceLabels[device.type]}:</label>
+        <label for="${moduleName}-${device.type}">${device.type}:</label>
         <select id="${moduleName}-${device.type}-pin" onchange="updateDevice('${moduleName}', '${device.type}', 'pin', this.value)">
           ${Object.entries(analogPins).map(([key, value]) => {
             return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
@@ -276,13 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadConfig(data) {
   const lines = data.split('\n');
   let currentModule = null;
-
-  const deviceLabels = {
-    SensorCorrente: 'Sensor de Corrente',
-    SensorVoltagem: 'Sensor de Voltagem',
-    Rele: 'Relê',
-    Display: 'Display'
-  };
 
   lines.forEach(line => {
     if (line.startsWith('[') && line.endsWith(']')) {

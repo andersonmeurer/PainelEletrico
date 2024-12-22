@@ -95,7 +95,7 @@ wss.on('connection', function connection(ws, req) {
 
       // Processar a mensagem recebida
       if (data.class === SENSOR_VOLTAGEM || data.class === SENSOR_CORRENTE) {
-        console.log(`Valor recebido do sensor ${data.id}: ${data.value}`);
+        console.log(`Valor recebido do sensor ${data.moduleName}.${data.class}: ${data.value}`);
         // Enviar o valor para o display correspondente
         displays.forEach(display => {
           if (display.moduleName === data.moduleName) {
