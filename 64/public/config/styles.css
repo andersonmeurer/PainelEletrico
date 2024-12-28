@@ -113,3 +113,9 @@ input, button, select {
 .error {
   border: 2px solid red;
 }
+
+#videoElement {
+  border: 1px solid #ccc;
+  width: 640px;
+  height: 480px;
+}

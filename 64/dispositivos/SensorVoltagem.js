@@ -10,7 +10,7 @@ class SensorVoltagem {
     this.wss = wss;
     this.pin = pin;
 
-    console.log(`${CLASS_NAME}::{moduleName:${moduleName}, pin:${pin}}`);
+    console.log(`${CLASS_NAME}::{moduleName:${moduleName}, pin:${this.pin}}`);
     const sensor = new five.Sensor({ pin: this.pin, freq: 2000 });
 
     const readings = [];

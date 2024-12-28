@@ -12,7 +12,7 @@ npm install johnny-five@2.1.0
 npm install firmata@2.3.0
 npm install serialport@9.0.0
 npm install ws@8.18.0
-npm install uuid
+npm install request
 
 
 

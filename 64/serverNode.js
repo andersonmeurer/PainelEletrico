@@ -1,4 +1,5 @@
 const CLASS_NAME = "Server-Node";
+logWithTimestamp(`${CLASS_NAME} is starting...`);
 
 const SENSOR_CORRENTE = 'SensorCorrente';
 const SENSOR_VOLTAGEM = 'SensorVoltagem';
@@ -66,7 +67,8 @@ app.post('/togglePin', (req, res) => {
     }
     res.send('Comando enviado ao Arduino');
   } else {
-    res.status(500).send('Placa não está pronta');
+    console.error(`${CLASS_NAME}::Placa não está pronta para receber comandos.`);
+    return res.status(500).send('Placa não está pronta');
   }
 });
 
@@ -78,24 +80,23 @@ app.get('/', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`${CLASS_NAME}::Servidor HTTP e WebSocket rodando em http://localhost:${PORT}`);
+  logWithTimestamp(`${CLASS_NAME}::Servidor HTTP e WebSocket rodando em http://localhost:${PORT}`);
 });
 
 wss.on('connection', function connection(ws, req) {
   const clientAddress = req.socket.remoteAddress;
   const clientPort = req.socket.remotePort;
-
-  console.log(`${CLASS_NAME}::Novo cliente conectado: ${clientAddress}:${clientPort}`);
+  logWithTimestamp(`${CLASS_NAME}::New client connected from ${req.socket.remoteAddress}`);
+  logWithTimestamp(`${CLASS_NAME}::Novo cliente conectado: ${clientAddress}:${clientPort}`);
 
   ws.on('message', function incoming(message) {
-    console.log(`${CLASS_NAME}::Mensagem recebida do cliente:`, message.toString());
     try {
       const data = JSON.parse(message);
-      console.log(`${CLASS_NAME}::Dados recebidos:`, data);
+      logWithTimestamp(`${CLASS_NAME}::Dados recebidos: ${JSON.stringify(data)}`);
 
       // Processar a mensagem recebida
       if (data.class === SENSOR_VOLTAGEM || data.class === SENSOR_CORRENTE) {
-        console.log(`Valor recebido do sensor ${data.moduleName}.${data.class}: ${data.value}`);
+        logWithTimestamp(`Valor recebido do sensor ${data.moduleName}.${data.class}: ${data.value}`);
         // Enviar o valor para o display correspondente
         displays.forEach(display => {
           if (display.moduleName === data.moduleName) {
@@ -108,6 +109,14 @@ wss.on('connection', function connection(ws, req) {
     }
   });
 
+  ws.on('error', function error(err) {
+    console.error('WebSocket client error:', err);
+  });
+
+  ws.on('close', function close() {
+    logWithTimestamp(`${CLASS_NAME}::Client disconnected`);
+  });
+
   ws.send(JSON.stringify({ message: 'Conexão estabelecida com sucesso' }));
 });
 
@@ -115,7 +124,7 @@ let isBoardReady = false;
 const board = new five.Board();
 
 board.on("ready", () => {
-  console.log(`${CLASS_NAME}::Johnny-Five está pronto!`);
+  logWithTimestamp(`${CLASS_NAME}::Johnny-Five está pronto!`);
   isBoardReady = true;
   boardOn_loadFile();
 });
@@ -143,17 +152,17 @@ function boardOn_loadFile() {
       }
 
       if (device.sensorcorrente) {
-        console.log(`${CLASS_NAME}::Instanciando sensor de corrente: {moduleName:${device.name}, Pin:${device.sensorcorrente}}`);
+        logWithTimestamp(`${CLASS_NAME}::Instanciando sensor de corrente: {moduleName:${device.name}, Pin:${device.sensorcorrente}}`);
         new SensorCorrente(device.name, board, device.sensorcorrente, wss);
       }
 
       if (device.sensorvoltagem) {
-        console.log(`${CLASS_NAME}::Instanciando sensor de voltagem: {moduleName:${device.name}, Pin:${device.sensorvoltagem}`);
+        logWithTimestamp(`${CLASS_NAME}::Instanciando sensor de voltagem: {moduleName:${device.name}, Pin:${device.sensorvoltagem}}`);
         new SensorVoltagem(device.name, board, wss, device.sensorvoltagem);
       }
 
       if (device.display_clk && device.display_dio) {
-        console.log(`${CLASS_NAME}::Instanciando display: {moduleName:${device.name}, Name:${device.name}, {clk:${device.display_clk}, dio:${device.display_dio}}`);
+        logWithTimestamp(`${CLASS_NAME}::Instanciando display: {moduleName:${device.name}, Name:${device.name}, {clk:${device.display_clk}, dio:${device.display_dio}}`);
         const display = new Display(device.name, board, device.display_clk, device.display_dio);
         displays.push(display);
       }
@@ -174,7 +183,11 @@ function boardOn_loadFile_parseConfig(config) {
       currentDevice = { name: line.slice(1, -1) };
     } else if (currentDevice) {
       const [key, value] = line.split('=');
-      currentDevice[key] = value;
+      if (!key || !value) {
+        console.error(`${CLASS_NAME}::Linha inválida na configuração: ${line}`);
+        return;
+      }
+      currentDevice[key.trim()] = value.trim();
     }
   });
 
@@ -183,4 +196,9 @@ function boardOn_loadFile_parseConfig(config) {
   }
 
   return devices;
+}
+
+function logWithTimestamp(message) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${CLASS_NAME}::${message}`);
 }
