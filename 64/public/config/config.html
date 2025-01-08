@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +14,14 @@
       <div class="form-group">
         <label for="moduleName">Nome do Módulo:</label>
         <input type="text" id="moduleName" required>
+      </div>
+      <div class="form-group">
+        <label for="cameraIp">IP da Câmera:</label>
+        <input type="text" id="cameraIp" placeholder="150.162.233.184" required>
+      </div>
+      <div class="form-group">
+        <label for="cameraPort">Porta da Câmera:</label>
+        <input type="text" id="cameraPort" placeholder="8080" required>
       </div>
       <button type="button" onclick="addModule()">Adicionar Módulo</button>
     </form>

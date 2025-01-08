@@ -34,6 +34,7 @@ app.get('/loadConfig', (req, res) => {
         res.status(500).send('Erro ao ler o arquivo');
       }
     } else {
+      //console.log('Arquivo lido com sucesso:', data);
       res.send(data);
     }
   });

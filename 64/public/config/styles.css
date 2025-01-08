@@ -73,7 +73,7 @@ input, button, select {
 }
 
 
-.module {
+.module-item {
   background-color: #e9ecef;
   border: 1px solid #ccc;
   padding: 10px;
@@ -81,17 +81,17 @@ input, button, select {
   border-radius: 4px;
 }
 
-.module h2 {
+.module-item h2 {
   margin-top: 0;
 }
 
-.module .form-group {
+.module-item .form-group {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.module button {
+.module-item button {
   margin-top: 10px;
 }
 

@@ -1,12 +1,19 @@
+const CLASS = 'SCRIPT.JS';
 const modules = [];
 const usedPins = new Set();
 const analogPins = { 69: 'A15', 68: 'A14', 67: 'A13', 66: 'A12', 65: 'A11', 64: 'A10', 63: 'A9', 62: 'A8', 61: 'A7', 60: 'A6', 59: 'A5', 58: 'A4', 57: 'A3', 56: 'A2', 55: 'A1', 54: 'A0' };
+const SENSOR_VOLTAGEM = 'Sensor de Voltagem';
+const SENSOR_CORRENTE = 'Sensor de Corrente';
+const RELE = 'Relê';
+const DISPLAY = 'Display';
+const CAMERA = 'Camera';
+
 
 const deviceLabels = {
-  SensorCorrente: 'Sensor de Corrente',
-  SensorVoltagem: 'Sensor de Voltagem',
-  Rele: 'Relê',
-  Display: 'Display'
+  SensorCorrente: SENSOR_CORRENTE,
+  SensorVoltagem: SENSOR_VOLTAGEM,
+  Rele: RELE,
+  Display: DISPLAY
 };
 
 function addModule() {
@@ -35,16 +42,16 @@ function updateModuleList() {
 
   modules.forEach((module, index) => {
     const moduleElement = document.createElement('div');
-    moduleElement.className = 'module';
+    moduleElement.className = 'module-item';
     moduleElement.innerHTML = `
       <h2>${module.name}</h2>
       <div class="form-group">
         <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
         <select id="deviceType-${module.name}">
-          <option value="Display">Display</option>
-          <option value="Rele">Relê</option>
-          <option value="SensorCorrente">Sensor de Corrente</option>
-          <option value="SensorVoltagem">Sensor de Voltagem</option>
+          <option value="${DISPLAY}">${DISPLAY}</option>
+          <option value="${RELE}">${RELE}</option>
+          <option value="SensorCorrente">${SENSOR_CORRENTE}</option>
+          <option value="SensorVoltagem">${SENSOR_VOLTAGEM}</option>
         </select>
         <button type="button" onclick="addDevice('${module.name}')">Adicionar Dispositivo</button>
       </div>
@@ -60,7 +67,7 @@ function updateModuleList() {
 }
 
 function createDeviceElement(moduleName, device) {
-  if (device.type === 'Display') {
+  if (device.type === DISPLAY) {
     return `
       <div class="form-group">
         <label for="${moduleName}-${device.type}-clk">${device.label} CLK:</label>
@@ -70,7 +77,7 @@ function createDeviceElement(moduleName, device) {
         <button onclick="removeDevice('${moduleName}', '${device.type}')">Remover</button>
       </div>
     `;
-  } else if (device.type === 'Rele') {
+  } else if (device.type === RELE) {
     return `
     <div class="form-group">
       <label for="${moduleName}-${device.type}-pin">${device.label} PIN:</label>
@@ -97,12 +104,7 @@ function addDevice(moduleName) {
   const deviceTypeSelect = document.getElementById(`deviceType-${moduleName}`);
   const deviceType = deviceTypeSelect.value;
 
-  const deviceLabel = {
-    Display: 'Display',
-    Rele: 'Relê',
-    SensorCorrente: 'SensorCorrente',
-    SensorVoltagem: 'SensorVoltagem'
-  }[deviceType];
+  const deviceLabel = deviceLabels[deviceType];
 
   if (!deviceLabel) {
     alert('Tipo de dispositivo inválido.');
@@ -115,7 +117,7 @@ function addDevice(moduleName) {
     return;
   }
 
-  if (deviceType === 'Display') {
+  if (deviceType === DISPLAY) {
     module.devices.push({
       type: deviceType,
       label: deviceLabel,
@@ -157,20 +159,22 @@ function hasDuplicatePins(modules) {
 
   for (const module of modules) {
     for (const device of module.devices) {
-      console.log(`Verificando dispositivo: ${device.type}, pino: ${device.pin}`);
-      if (device.type === 'Display') {
-        if (pinUsage.has(device.clk) || pinUsage.has(device.dio) || device.clk === device.dio) {
-          console.log(`Pino duplicado encontrado: ${device.clk} ou ${device.dio}`);
-          return true;
+      if (device.type) {
+        console.log(`Verificando dispositivo: ${device.type}, pino: ${device.pin}`);
+        if (device.type === DISPLAY) {
+          if (pinUsage.has(device.clk) || pinUsage.has(device.dio) || device.clk === device.dio) {
+            console.log(`Pino duplicado encontrado: ${device.clk} ou ${device.dio}`);
+            return true;
+          }
+          pinUsage.add(device.clk);
+          pinUsage.add(device.dio);
+        } else {
+          if (pinUsage.has(device.pin)) {
+            console.log(`Pino duplicado encontrado: ${device.pin}`);
+            return true;
+          }
+          pinUsage.add(device.pin);
         }
-        pinUsage.add(device.clk);
-        pinUsage.add(device.dio);
-      } else {
-        if (pinUsage.has(device.pin)) {
-          console.log(`Pino duplicado encontrado: ${device.pin}`);
-          return true;
-        }
-        pinUsage.add(device.pin);
       }
     }
   }
@@ -183,7 +187,7 @@ function removeDevice(moduleName, deviceType) {
   const deviceIndex = module.devices.findIndex(device => device.type === deviceType);
   if (deviceIndex !== -1) {
     const device = module.devices[deviceIndex];
-    if (device.type === 'Display') {
+    if (device.type === DISPLAY) {
       usedPins.delete(device.clk);
       usedPins.delete(device.dio);
     } else {
@@ -211,7 +215,7 @@ function moveModuleDown(index) {
 function removeModule(index) {
   const module = modules[index];
   module.devices.forEach(device => {
-    if (device.type === 'Display') {
+    if (device.type === DISPLAY) {
       usedPins.delete(device.clk);
       usedPins.delete(device.dio);
     } else {
@@ -230,7 +234,7 @@ function saveConfig() {
 
     const config = modules.map(module => {
       const devicesConfig = module.devices.map(device => {
-        if (device.type === 'Display') {
+        if (device.type === DISPLAY) {
           return `display_clk=${device.clk}\ndisplay_dio=${device.dio}`;
         } else {
           return `${device.type.toLowerCase()}=${device.pin}`;
@@ -288,7 +292,7 @@ function loadConfig(data) {
     } else if (currentModule) {
       const [key, value] = line.split('=');
       if (key.startsWith('display_')) {
-        const type = 'Display';
+        const type = DISPLAY;
         let device = currentModule.devices.find(device => device.type === type);
         if (!device) {
           device = { type, label: deviceLabels[type], clk: '', dio: '' };
