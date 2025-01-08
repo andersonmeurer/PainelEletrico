@@ -34,8 +34,16 @@ app.get('/loadConfig', (req, res) => {
         res.status(500).send('Erro ao ler o arquivo');
       }
     } else {
-      //console.log('Arquivo lido com sucesso:', data);
-      res.send(data);
+      try {
+        loadProperties().then(properties => {
+          const devices = boardOn_loadFile_loadDevices(properties);
+          console.log('Arquivo lido com sucesso:', JSON.stringify(devices));
+          res.json(devices);
+        });
+      } catch (parseError) {
+        console.error('Erro ao analisar o arquivo de configuração:', parseError);
+        res.status(500).send('Erro ao analisar o arquivo de configuração');
+      }
     }
   });
 });
@@ -136,18 +144,32 @@ board.on("error", (err) => {
 
 const displays = [];
 
+function loadProperties() {
+  return new Promise((resolve, reject) => {
+    fs.readFile(configFilePath, 'utf8', (err, properties) => {
+      if (err) {
+        console.error(`${CLASS_NAME}::Erro ao ler o arquivo de configuração:`, err);
+        reject(err);
+      } else {
+        resolve(properties);
+      }
+    });
+  });
+}
+
 function boardOn_loadFile() {
-  fs.readFile(configFilePath, 'utf8', (err, data) => {
-    if (err) {
-      console.error('${CLASS_NAME}::Erro ao ler o arquivo de configuração:', err);
-      return;
-    }
+//JSON.stringify
 
-    const config = boardOn_loadFile_parseConfig(data);
+    loadProperties().then(properties => {
 
-    config.forEach(device => {
-      if (!device.sensorcorrente && !device.sensorvoltagem) {
-        console.error(`${CLASS_NAME}::Erro: O módulo ${device.name} deve ter pelo menos um sensor de corrente ou um sensor de voltagem.`);
+    const devices = boardOn_loadFile_loadDevices(properties);
+
+    devices.forEach(device => {
+      if (device.name === 'Camera') {
+        logWithTimestamp(`${CLASS_NAME}::Instanciando câmera: {moduleName:${device.name}, IP:${device.cameraIP}, Port:${device.cameraPort}}`);
+
+      } else if (!device.sensorcorrente && !device.sensorvoltagem) {
+        console.error(`${CLASS_NAME}::Erro: O módulo '${device.name}' deve ter pelo menos um sensor de corrente ou um sensor de voltagem.`);
         console.error('Configuração inválida:', device);
         return;
       }
@@ -155,26 +177,29 @@ function boardOn_loadFile() {
       if (device.sensorcorrente) {
         logWithTimestamp(`${CLASS_NAME}::Instanciando sensor de corrente: {moduleName:${device.name}, Pin:${device.sensorcorrente}}`);
         new SensorCorrente(device.name, board, device.sensorcorrente, wss);
-      }
 
-      if (device.sensorvoltagem) {
+      } else if (device.sensorvoltagem) {
         logWithTimestamp(`${CLASS_NAME}::Instanciando sensor de voltagem: {moduleName:${device.name}, Pin:${device.sensorvoltagem}}`);
         new SensorVoltagem(device.name, board, wss, device.sensorvoltagem);
-      }
 
-      if (device.display_clk && device.display_dio) {
+      } else if (device.display_clk && device.display_dio) {
         logWithTimestamp(`${CLASS_NAME}::Instanciando display: {moduleName:${device.name}, Name:${device.name}, {clk:${device.display_clk}, dio:${device.display_dio}}`);
         const display = new Display(device.name, board, device.display_clk, device.display_dio);
         displays.push(display);
       }
     });
+  })
+  .catch(err => {
+    console.error(`${CLASS_NAME}::Erro ao carregar as propriedades:`, err);
   });
 }
 
-function boardOn_loadFile_parseConfig(config) {
+function boardOn_loadFile_loadDevices(config) {
   const devices = [];
   const lines = config.trim().split('\n');
   let currentDevice = null;
+  let cameraIP = '';
+  let cameraPort = '';
 
   lines.forEach(line => {
     if (line.startsWith('[') && line.endsWith(']')) {
@@ -189,6 +214,13 @@ function boardOn_loadFile_parseConfig(config) {
         return;
       }
       currentDevice[key.trim()] = value.trim();
+    } else {
+      const [key, value] = line.split('=');
+      if (key.trim() === 'camera_ip') {
+        cameraIP = value.trim();
+      } else if (key.trim() === 'camera_port') {
+        cameraPort = value.trim();
+      }
     }
   });
 
@@ -196,6 +228,13 @@ function boardOn_loadFile_parseConfig(config) {
     devices.push(currentDevice);
   }
 
+  // Add camera device with IP and port
+  /*const camera = {
+    name: 'Camera',
+    ip: cameraIP, // Replace with actual IP
+    port: cameraPort // Replace with actual port
+  };
+  devices.push(camera);*/
   return devices;
 }
 

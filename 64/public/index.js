@@ -8,84 +8,95 @@ document.addEventListener('DOMContentLoaded', (event) => {
       if (!response.ok) {
         throw new Error('Arquivo não encontrado');
       }
-      return response.text();
+      return response.json();
     })
-    .then(config => {
-      console.log('Configurações carregadas:', config);
-      const modules = parseConfig(config);
-      renderModules(modules);
-    })
-    .catch(error => {
-      console.error('Erro ao carregar a configuração:', error);
+    .then(data => {
+      try {
+        const modules = parseConfig(data);
+        console.log('Arquivo lido com sucesso:', JSON.stringify(modules));
+        renderModules(modules);
+
+        // Set the camera IP and port
+        const cameraModule = modules.find(module => module.name === 'Camera');
+        if (cameraModule) {
+          const cameraIP = cameraModule.devices.find(device => device.type === 'camera_ip').pin;
+          const cameraPort = cameraModule.devices.find(device => device.type === 'camera_port').pin;
+          const videoElement = document.getElementById('videoElement');
+          videoElement.src = `http://${cameraIP}:${cameraPort}/`;
+        }
+      } catch (parseError) {
+        console.error('Erro ao analisar o arquivo de configuração:', parseError);
+        res.status(500).send('Erro ao analisar o arquivo de configuração');
+      }
     });
 
   const modulesContainer = document.getElementById('modules-container');
 
   function parseConfig(config) {
-    const modules = [];
-    const lines = config.trim().split('\n');
-    let currentModule = null;
-
-    lines.forEach(line => {
-      if (line.startsWith('[') && line.endsWith(']')) {
-        if (currentModule) {
-          modules.push(currentModule);
-        }
-        currentModule = { name: line.slice(1, -1), devices: [] };
-      } else if (currentModule) {
-        const [key, value] = line.split('=');
-        currentModule.devices.push({ type: key, pin: value });
-      }
+    const modules = config.map(module => {
+      const devices = Object.keys(module).filter(key => key !== 'name').map(key => ({
+        type: key,
+        pin: module[key]
+      }));
+      return {
+        name: module.name,
+        devices: devices
+      };
     });
-
-    if (currentModule) {
-      modules.push(currentModule);
-    }
-
     return modules;
   }
 
   function renderModules(modules) {
     modulesContainer.innerHTML = '';
+
     modules.forEach(module => {
-      const moduleElement = document.createElement('div');
-      moduleElement.className = 'module';
-      moduleElement.innerHTML = `<h2>${module.name}</h2>`;
-      module.devices.forEach(device => {
-        const deviceElement = document.createElement('div');
-        deviceElement.className = 'device';
-        if (device.type === 'rele') {
-          deviceElement.innerHTML = `
-            <label class="switch">
-              <input type="checkbox" data-pin="${device.pin}">
-              <span class="slider"></span>
-            </label>
-          `;
-          deviceElement.querySelector('input').addEventListener('change', (event) => {
-            const pin = event.target.getAttribute('data-pin');
-            const state = event.target.checked ? 'on' : 'off';
-            fetch('/togglePin', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ pin, state })
-            }).catch(error => console.error('Erro ao enviar comando para o Arduino:', error));
-          });
-        } else if (device.type.includes('display')) {
-          deviceElement.innerHTML = `
-            <div id="display-${device.pin}" class="display">
-              DISPLAY_CLK: ${device.pin}, DISPLAY_DIO: ${device.pin}
-            </div>
-          `;
-        } else {
-          deviceElement.innerHTML = `
-            <label>${device.type.toUpperCase()}</label>
-          `;
-        }
-        moduleElement.appendChild(deviceElement);
-      });
-      modulesContainer.appendChild(moduleElement);
+      if (module.name === 'Camera') {
+        return;
+      }
+
+      const moduleDiv = document.createElement('div');
+      moduleDiv.className = 'module';
+      moduleDiv.innerHTML = `<h2>${module.name}</h2>`;
+
+      if (module.devices && Array.isArray(module.devices)) {
+        module.devices.forEach(device => {
+
+          const deviceDiv = document.createElement('div');
+          deviceDiv.className = 'device';
+          if (device.type === 'rele') {
+            deviceDiv.innerHTML = `
+              <label class="switch">
+                <input type="checkbox" data-pin="${device.pin}">
+                <span class="slider"></span>
+              </label>
+            `;
+            deviceDiv
+              .querySelector('input')
+              .addEventListener('change', (event) => {
+                const pin = event.target.getAttribute('data-pin');
+                const state = event.target.checked ? 'on' : 'off';
+                fetch('/togglePin', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ pin, state })
+                }).catch(error => console.error('Erro ao enviar comando para o Arduino:', error));
+              });
+          } else if (device.type.includes('display')) {
+            //nao apresentar os pinos do display
+          } else {
+            deviceDiv.innerHTML = `
+              <label>${device.type.toUpperCase()}</label>
+            `;
+          }
+
+          moduleDiv.appendChild(deviceDiv);
+        });
+      } else {
+        console.warn(`Module ${module.name} does not have a devices array.`);
+      }
+      modulesContainer.appendChild(moduleDiv);
     });
   }
 
