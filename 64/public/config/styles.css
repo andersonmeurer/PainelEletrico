@@ -1,6 +1,6 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #f0f0f0;
+  background-color: white;
   margin: 0;
   padding: 20px;
 }
@@ -9,6 +9,7 @@ body {
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
+  border: 1px solid #ccc;
 }
 
 .back-link {
@@ -118,4 +119,24 @@ input, button, select {
   border: 1px solid #ccc;
   width: 640px;
   height: 480px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+}
+
+.button-group button {
+  flex: 1; /* Make buttons the same size */
+  padding: 10px 20px;
+  text-align: center;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.button-group button:hover {
+  background-color: #0056b3;
 }

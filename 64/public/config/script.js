@@ -1,4 +1,4 @@
-const CLASS = 'SCRIPT.JS';
+const CLASS_NAME = 'script.js->config.js';
 const modules = [];
 const usedPins = new Set();
 const analogPins = { 69: 'A15', 68: 'A14', 67: 'A13', 66: 'A12', 65: 'A11', 64: 'A10', 63: 'A9', 62: 'A8', 61: 'A7', 60: 'A6', 59: 'A5', 58: 'A4', 57: 'A3', 56: 'A2', 55: 'A1', 54: 'A0' };
@@ -17,6 +17,7 @@ const deviceLabels = {
 };
 
 function addModule() {
+  logWithTimestamp(`${CLASS_NAME}::addModule()`);
   const moduleName = document.getElementById('moduleName').value;
   if (!moduleName) {
     alert('Por favor, insira um nome para o módulo.');
@@ -37,36 +38,59 @@ function addModule() {
 }
 
 function updateModuleList() {
+  logWithTimestamp(`${CLASS_NAME}::updateModuleList()`);
   const moduleList = document.getElementById('moduleList');
   moduleList.innerHTML = '';
 
+  logWithTimestamp(`${CLASS_NAME}::updateModuleList():`+JSON.stringify(modules));
   modules.forEach((module, index) => {
-    const moduleElement = document.createElement('div');
-    moduleElement.className = 'module-item';
-    moduleElement.innerHTML = `
-      <h2>${module.name}</h2>
-      <div class="form-group">
-        <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
-        <select id="deviceType-${module.name}">
-          <option value="${DISPLAY}">${DISPLAY}</option>
-          <option value="${RELE}">${RELE}</option>
-          <option value="SensorCorrente">${SENSOR_CORRENTE}</option>
-          <option value="SensorVoltagem">${SENSOR_VOLTAGEM}</option>
-        </select>
-        <button type="button" onclick="addDevice('${module.name}')">Adicionar Dispositivo</button>
-      </div>
-      <div id="${module.name}-devices">
-        ${module.devices.map(device => createDeviceElement(module.name, device)).join('')}
-      </div>
-      <button onclick="moveModuleUp(${index})">Mover para Cima</button>
-      <button onclick="moveModuleDown(${index})">Mover para Baixo</button>
-      <button onclick="removeModule(${index})">Remover Módulo</button>
-    `;
-    moduleList.appendChild(moduleElement);
+    const moduleDiv = document.createElement('div');
+    moduleDiv.className = 'module-item';
+
+    if (module.name === CAMERA) {
+      const cameraIP = module.devices.find(device => device.type === 'camera_ip').pin;
+      const cameraPort = module.devices.find(device => device.type === 'camera_port').pin;
+
+      moduleDiv.innerHTML = `
+        <h2>${module.name}</h2>
+        <div class="form-group">
+          <label for="cameraIP-${module.name}">IP da Câmera:</label>
+          <input type="text" id="cameraIP-${module.name}" value="${cameraIP}">
+        </div>
+        <div class="form-group">
+          <label for="cameraPort-${module.name}">Porta da Câmera:</label>
+          <input type="text" id="cameraPort-${module.name}" value="${cameraPort}">
+        </div>
+      `;
+    } else {
+      moduleDiv.innerHTML = `
+        <h2>${module.name}</h2>
+        <div class="form-group">
+          <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
+          <select id="deviceType-${module.name}">
+            <option value="${DISPLAY}">${DISPLAY}</option>
+            <option value="${RELE}">${RELE}</option>
+            <option value="SensorCorrente">${SENSOR_CORRENTE}</option>
+            <option value="SensorVoltagem">${SENSOR_VOLTAGEM}</option>
+          </select>
+          <button type="button" onclick="addDevice('${module.name}')">Adicionar Dispositivo</button>
+        </div>
+        <div id="${module.name}-devices">
+          ${module.devices.map(device => createDeviceElement(module.name, device)).join('')}
+        </div>
+        <div class="button-group">
+          <button onclick="moveModuleUp(${index})">Mover para Cima</button>
+          <button onclick="moveModuleDown(${index})">Mover para Baixo</button>
+          <button onclick="removeModule(${index})">Remover Módulo</button>
+        </div>
+      `;
+    }
+    moduleList.appendChild(moduleDiv);
   });
 }
 
 function createDeviceElement(moduleName, device) {
+  logWithTimestamp(`${CLASS_NAME}::createDeviceElement()`);
   if (device.type === DISPLAY) {
     return `
       <div class="form-group">
@@ -101,6 +125,7 @@ function createDeviceElement(moduleName, device) {
 }
 
 function addDevice(moduleName) {
+  logWithTimestamp(`${CLASS_NAME}::addDevice()`);
   const deviceTypeSelect = document.getElementById(`deviceType-${moduleName}`);
   const deviceType = deviceTypeSelect.value;
 
@@ -136,6 +161,7 @@ function addDevice(moduleName) {
 }
 
 function updateDevice(moduleName, deviceType, pinType, pin) {
+  logWithTimestamp(`${CLASS_NAME}::updateDevice()`);
   const inputElement = document.getElementById(`${moduleName}-${deviceType}-${pinType}`);
   
   if (!inputElement) {
@@ -155,6 +181,7 @@ function updateDevice(moduleName, deviceType, pinType, pin) {
 }
 
 function hasDuplicatePins(modules) {
+  logWithTimestamp(`${CLASS_NAME}::hasDuplicatePins()`);
   const pinUsage = new Set();
 
   for (const module of modules) {
@@ -183,6 +210,7 @@ function hasDuplicatePins(modules) {
 }
 
 function removeDevice(moduleName, deviceType) {
+  logWithTimestamp(`${CLASS_NAME}::removeDevice()`);
   const module = modules.find(module => module.name === moduleName);
   const deviceIndex = module.devices.findIndex(device => device.type === deviceType);
   if (deviceIndex !== -1) {
@@ -199,6 +227,7 @@ function removeDevice(moduleName, deviceType) {
 }
 
 function moveModuleUp(index) {
+  logWithTimestamp(`${CLASS_NAME}::moveModuleUp()`);
   if (index > 0) {
     [modules[index - 1], modules[index]] = [modules[index], modules[index - 1]];
     updateModuleList();
@@ -206,6 +235,7 @@ function moveModuleUp(index) {
 }
 
 function moveModuleDown(index) {
+  logWithTimestamp(`${CLASS_NAME}::moveModuleDown()`);
   if (index < modules.length - 1) {
     [modules[index + 1], modules[index]] = [modules[index], modules[index + 1]];
     updateModuleList();
@@ -213,6 +243,7 @@ function moveModuleDown(index) {
 }
 
 function removeModule(index) {
+  logWithTimestamp(`${CLASS_NAME}::removeModule()`);
   const module = modules[index];
   module.devices.forEach(device => {
     if (device.type === DISPLAY) {
@@ -227,6 +258,7 @@ function removeModule(index) {
 }
 
 function saveConfig() {
+  logWithTimestamp(`${CLASS_NAME}::saveConfig()`);
   if (hasDuplicatePins(modules)) {
     alert('Existem dispositivos utilizando o mesmo pino. Por favor, verifique as configurações.');
     return;
@@ -264,57 +296,55 @@ function saveConfig() {
 document.addEventListener('DOMContentLoaded', () => {
   fetch('/loadConfig')
     .then(response => {
+      console.log('Resposta do servidor recebida:', response);
       if (!response.ok) {
         throw new Error('Arquivo não encontrado');
       }
-      return response.text();
+      return response.json();
     })
     .then(data => {
-      loadConfig(data);
+      const modules = parseConfig(data);
+      console.log('Arquivo lido com sucesso:', JSON.stringify(modules));
+      loadConfig(modules);
     })
     .catch(error => {
       console.error('Erro ao carregar a configuração:', error);
     });
 });
 
-function loadConfig(data) {
-  const lines = data.split('\n');
-  let currentModule = null;
-
-  lines.forEach(line => {
-    if (line.startsWith('[') && line.endsWith(']')) {
-      const moduleName = line.slice(1, -1);
-      currentModule = {
-        name: moduleName,
-        devices: []
-      };
-      modules.push(currentModule);
-    } else if (currentModule) {
-      const [key, value] = line.split('=');
-      if (key.startsWith('display_')) {
-        const type = DISPLAY;
-        let device = currentModule.devices.find(device => device.type === type);
-        if (!device) {
-          device = { type, label: deviceLabels[type], clk: '', dio: '' };
-          currentModule.devices.push(device);
-        }
-        if (key === 'display_clk') {
-          device.clk = value;
-        } else if (key === 'display_dio') {
-          device.dio = value;
-        }
-      } else {
-        const type = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-        let device = currentModule.devices.find(device => device.type === type);
-        if (!device) {
-          device = { type, label: deviceLabels[type] || type, pin: '' };
-          currentModule.devices.push(device);
-        }
-        device.pin = value;
-        usedPins.add(value); // Adiciona o pino usado ao conjunto
-      }
-    }
+function loadConfig(listModules) {
+  logWithTimestamp(`${CLASS_NAME}::loadConfig()`);
+  logWithTimestamp(`${CLASS_NAME}::loadConfig():`+JSON.stringify(listModules));
+  listModules.forEach(module => {
+    const currentModule = {
+      name: module.name,
+      devices: module.devices.map(device => ({
+        type: device.type,
+        pin: device.pin,
+        label: deviceLabels[device.type] || device.type
+      }))
+    };
+    modules.push(currentModule);
   });
-
   updateModuleList();
+}
+
+function parseConfig(config) {
+  logWithTimestamp(`${CLASS_NAME}::parseConfig()`);
+  const modules = config.map(module => {
+    const devices = Object.keys(module).filter(key => key !== 'name').map(key => ({
+      type: key,
+      pin: module[key]
+    }));
+    return {
+      name: module.name,
+      devices: devices
+    };
+  });
+  return modules;
+}
+
+function logWithTimestamp(message) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${CLASS_NAME}::${message}`);
 }

@@ -3,6 +3,7 @@ logWithTimestamp(`${CLASS_NAME} is starting...`);
 
 const SENSOR_CORRENTE = 'SensorCorrente';
 const SENSOR_VOLTAGEM = 'SensorVoltagem';
+const CAMERA = 'Camera';
 
 const express = require('express');
 const fs = require('fs');
@@ -165,7 +166,7 @@ function boardOn_loadFile() {
     const devices = boardOn_loadFile_loadDevices(properties);
 
     devices.forEach(device => {
-      if (device.name === 'Camera') {
+      if (device.name === CAMERA) {
         logWithTimestamp(`${CLASS_NAME}::Instanciando câmera: {moduleName:${device.name}, IP:${device.cameraIP}, Port:${device.cameraPort}}`);
 
       } else if (!device.sensorcorrente && !device.sensorvoltagem) {
