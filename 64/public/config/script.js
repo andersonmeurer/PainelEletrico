@@ -53,11 +53,11 @@ function updateModuleList() {
 
       moduleDiv.innerHTML = `
         <h2>${module.name}</h2>
-        <div class="form-group">
+        <div class="devices">
           <label for="cameraIP-${module.name}">IP da Câmera:</label>
           <input type="text" id="cameraIP-${module.name}" value="${cameraIP}">
         </div>
-        <div class="form-group">
+        <div class="devices">
           <label for="cameraPort-${module.name}">Porta da Câmera:</label>
           <input type="text" id="cameraPort-${module.name}" value="${cameraPort}">
         </div>
@@ -65,7 +65,7 @@ function updateModuleList() {
     } else {
       moduleDiv.innerHTML = `
         <h2>${module.name}</h2>
-        <div class="form-group">
+        <div class="devices">
           <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
           <select id="deviceType-${module.name}">
             <option value="${DISPLAY}">${DISPLAY}</option>
@@ -93,7 +93,7 @@ function createDeviceElement(moduleName, device) {
   logWithTimestamp(`${CLASS_NAME}::createDeviceElement()`);
   if (device.type === DISPLAY) {
     return `
-      <div class="form-group">
+      <div class="devices">
         <label for="${moduleName}-${device.type}-clk">${device.label} CLK:</label>
         <input type="number" id="${moduleName}-${device.type}-clk" value="${device.clk}" onchange="updateDevice('${moduleName}', '${device.type}', 'clk', this.value)">
         <label for="${moduleName}-${device.type}-dio">${device.label} DIO:</label>
@@ -103,7 +103,7 @@ function createDeviceElement(moduleName, device) {
     `;
   } else if (device.type === RELE) {
     return `
-    <div class="form-group">
+    <div class="devices">
       <label for="${moduleName}-${device.type}-pin">${device.label} PIN:</label>
       <input type="number" id="${moduleName}-${device.type}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${device.type}', 'pin', this.value)">
       <button onclick="removeDevice('${moduleName}', '${device.type}')">Remover</button>
@@ -111,7 +111,7 @@ function createDeviceElement(moduleName, device) {
   `;
   } else if (device.type !== '') {
     return `
-      <div class="form-group">
+      <div class="devices">
         <label for="${moduleName}-${device.type}">${device.type}:</label>
         <select id="${moduleName}-${device.type}-pin" onchange="updateDevice('${moduleName}', '${device.type}', 'pin', this.value)">
           ${Object.entries(analogPins).map(([key, value]) => {
@@ -180,31 +180,30 @@ function updateDevice(moduleName, deviceType, pinType, pin) {
   inputElement.classList.remove('error');
 }
 
-function hasDuplicatePins(modules) {
+function hasDuplicatePins() {
   logWithTimestamp(`${CLASS_NAME}::hasDuplicatePins()`);
   const pinUsage = new Set();
+  const moduleElements = document.querySelectorAll('.module-item');
 
-  for (const module of modules) {
-    for (const device of module.devices) {
-      if (device.type) {
-        console.log(`Verificando dispositivo: ${device.type}, pino: ${device.pin}`);
-        if (device.type === DISPLAY) {
-          if (pinUsage.has(device.clk) || pinUsage.has(device.dio) || device.clk === device.dio) {
-            console.log(`Pino duplicado encontrado: ${device.clk} ou ${device.dio}`);
+  moduleElements.forEach(moduleElement => {
+    const deviceElements = moduleElement.querySelectorAll('.device');
+
+    deviceElements.forEach(deviceElement => {
+      const pinInputs = deviceElement.querySelectorAll('input[type="text"], input[type="number"]');
+      
+      pinInputs.forEach(input => {
+        const pin = input.value.trim();
+        if (pin) {
+          console.log(`Verificando pino: ${pin}`);
+          if (pinUsage.has(pin)) {
+            console.log(`Pino duplicado encontrado: ${pin}`);
             return true;
           }
-          pinUsage.add(device.clk);
-          pinUsage.add(device.dio);
-        } else {
-          if (pinUsage.has(device.pin)) {
-            console.log(`Pino duplicado encontrado: ${device.pin}`);
-            return true;
-          }
-          pinUsage.add(device.pin);
+          pinUsage.add(pin);
         }
-      }
-    }
-  }
+      });
+    });
+  });
 
   return false;
 }
@@ -259,37 +258,47 @@ function removeModule(index) {
 
 function saveConfig() {
   logWithTimestamp(`${CLASS_NAME}::saveConfig()`);
-  if (hasDuplicatePins(modules)) {
+  if (hasDuplicatePins()) {
     alert('Existem dispositivos utilizando o mesmo pino. Por favor, verifique as configurações.');
     return;
   }
 
-    const config = modules.map(module => {
-      const devicesConfig = module.devices.map(device => {
-        if (device.type === DISPLAY) {
-          return `display_clk=${device.clk}\ndisplay_dio=${device.dio}`;
-        } else {
-          return `${device.type.toLowerCase()}=${device.pin}`;
+  const moduleElements = document.querySelectorAll('.module-item');
+  const config = Array.from(moduleElements).map(moduleElement => {
+    const moduleName = moduleElement.querySelector('h2').textContent.trim();
+    if (moduleName === CAMERA) {
+      const cameraIP = moduleElement.querySelector('input[id^="cameraIP"]').value.trim();
+      const cameraPort = moduleElement.querySelector('input[id^="cameraPort"]').value.trim();
+      return `[${moduleName}]\ncamera_ip=${cameraIP}\ncamera_port=${cameraPort}`;
+    } else {
+      const devices = moduleElement.querySelectorAll('.devices');
+      const devicesConfig = Array.from(devices).map(deviceElement => {
+        const label = deviceElement.querySelector('label').textContent.trim().toUpperCase().replace(':', '');
+        const pin = deviceElement.querySelector('select').value.trim();
+        if (label === 'tipo de dispositivo') {
+          return ''; // Skip this line
         }
+        return `${label}=${pin}`;
       }).join('\n');
-      return `[${module.name}]\n${devicesConfig}`;
-    }).join('\n\n');
-  
-    fetch('/saveConfig', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ config })
-    })
-    .then(response => response.text())
-    .then(data => {
-      alert(data);
-    })
-    .catch(error => {
-      console.error('Erro ao salvar a configuração:', error);
-      alert('Erro ao salvar a configuração');
-    });
+      return `[${moduleName}]\n${devicesConfig}`;
+    }
+  }).join('\n\n');
+
+  fetch('/saveConfig', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ config })
+  })
+  .then(response => response.text())
+  .then(data => {
+    alert(data);
+  })
+  .catch(error => {
+    console.error('Erro ao salvar a configuração:', error);
+    alert('Erro ao salvar a configuração');
+  });
 }
 
 //carregar configuracoes ja salvas
@@ -303,9 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return response.json();
     })
     .then(data => {
-      const modules = parseConfig(data);
-      console.log('Arquivo lido com sucesso:', JSON.stringify(modules));
-      loadConfig(modules);
+      const listModules = parseConfig(data);
+      console.log('Arquivo lido com sucesso:', JSON.stringify(listModules));
+      loadConfig(listModules);
     })
     .catch(error => {
       console.error('Erro ao carregar a configuração:', error);
@@ -314,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadConfig(listModules) {
   logWithTimestamp(`${CLASS_NAME}::loadConfig()`);
-  logWithTimestamp(`${CLASS_NAME}::loadConfig():`+JSON.stringify(listModules));
   listModules.forEach(module => {
     const currentModule = {
       name: module.name,

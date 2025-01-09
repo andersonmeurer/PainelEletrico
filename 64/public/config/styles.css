@@ -42,7 +42,7 @@ button:hover {
   background-color: #0056b3;
 }
 
-.form-group {
+.devices {
   margin-bottom: 20px;
 }
 
@@ -86,7 +86,7 @@ input, button, select {
   margin-top: 0;
 }
 
-.module-item .form-group {
+.module-item .devices {
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -106,7 +106,7 @@ input, button, select {
     padding: 8px;
   }
 
-  .form-group {
+  .devices {
     flex-direction: column;
   }
 }
