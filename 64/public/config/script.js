@@ -2,10 +2,12 @@ const CLASS_NAME = 'script.js->config.js';
 const modules = [];
 const usedPins = new Set();
 const analogPins = { 69: 'A15', 68: 'A14', 67: 'A13', 66: 'A12', 65: 'A11', 64: 'A10', 63: 'A9', 62: 'A8', 61: 'A7', 60: 'A6', 59: 'A5', 58: 'A4', 57: 'A3', 56: 'A2', 55: 'A1', 54: 'A0' };
-const SENSOR_VOLTAGEM = 'Sensor de Voltagem';
-const SENSOR_CORRENTE = 'Sensor de Corrente';
-const RELE = 'Relê';
+const SENSOR_VOLTAGEM = 'SensorVoltagem';
+const SENSOR_CORRENTE = 'SensorCorrente';
+const RELE = 'Rele';
 const DISPLAY = 'Display';
+const DISPLAY_DIO = 'Display_DIO';
+const DISPLAY_CLK = 'Display_CLK';
 const CAMERA = 'Camera';
 
 
@@ -90,39 +92,49 @@ function updateModuleList() {
 }
 
 function createDeviceElement(moduleName, device) {
-  logWithTimestamp(`${CLASS_NAME}::createDeviceElement()`);
-  if (device.type === DISPLAY) {
-    return `
-      <div class="devices">
-        <label for="${moduleName}-${device.type}-clk">${device.label} CLK:</label>
-        <input type="number" id="${moduleName}-${device.type}-clk" value="${device.clk}" onchange="updateDevice('${moduleName}', '${device.type}', 'clk', this.value)">
-        <label for="${moduleName}-${device.type}-dio">${device.label} DIO:</label>
-        <input type="number" id="${moduleName}-${device.type}-dio" value="${device.dio}" onchange="updateDevice('${moduleName}', '${device.type}', 'dio', this.value)">
-        <button onclick="removeDevice('${moduleName}', '${device.type}')">Remover</button>
-      </div>
-    `;
-  } else if (device.type === RELE) {
-    return `
-    <div class="devices">
-      <label for="${moduleName}-${device.type}-pin">${device.label} PIN:</label>
-      <input type="number" id="${moduleName}-${device.type}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${device.type}', 'pin', this.value)">
-      <button onclick="removeDevice('${moduleName}', '${device.type}')">Remover</button>
-    </div>
-  `;
-  } else if (device.type !== '') {
-    return `
-      <div class="devices">
-        <label for="${moduleName}-${device.type}">${device.type}:</label>
-        <select id="${moduleName}-${device.type}-pin" onchange="updateDevice('${moduleName}', '${device.type}', 'pin', this.value)">
-          ${Object.entries(analogPins).map(([key, value]) => {
-            return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
-          }).join('')}
-        </select>
-        <button onclick="removeDevice('${moduleName}', '${device.type}')">Remover</button>
-      </div>
-    `;
+  
+  const DEVICE_TYPE = device.type.toLowerCase();
+  logWithTimestamp(`${CLASS_NAME}::createDeviceElement()>>>>>>>>>>>>>`+DEVICE_TYPE+'--'+JSON.stringify(device));
+
+  switch (DEVICE_TYPE) {
+    case DISPLAY_CLK.toLowerCase():
+    case DISPLAY_DIO.toLowerCase():
+      return `
+        <div class="devices">
+          <label for="${moduleName}-${DEVICE_TYPE}-clk">${device.label} CLKK:</label>
+          <input type="number" id="${moduleName}-${DEVICE_TYPE}-clk" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'clk', this.value)">
+          <label for="${moduleName}-${DEVICE_TYPE}-dio">${device.label} DIO:</label>
+          <input type="number" id="${moduleName}-${DEVICE_TYPE}-dio" value="${device.dio}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'dio', this.value)">
+          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+        </div>
+      `;
+      break;
+    case RELE.toLowerCase():
+      return `
+        <div class="devices">
+          <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
+          <input type="number" id="${moduleName}-${DEVICE_TYPE}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
+          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+        </div>
+      `;
+      break;
+    default:
+      if (DEVICE_TYPE !== '') {
+        return;
+      }
+      return `
+        <div class="devices">
+          <label for="${moduleName}-${DEVICE_TYPE}">${DEVICE_TYPE}:</label>
+          <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
+            ${Object.entries(analogPins).map(([key, value]) => {
+              return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
+            }).join('')}
+          </select>
+          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+        </div>
+      `;
+    }
   }
-}
 
 function addDevice(moduleName) {
   logWithTimestamp(`${CLASS_NAME}::addDevice()`);

@@ -1,6 +1,6 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  background-color: white;
   margin: 0;
   padding: 0;
 }
@@ -58,7 +58,7 @@ button:hover {
   background-color: #0056b3;
 }
 
-.form-group {
+.devices {
   margin-bottom: 20px;
 }
 
@@ -82,8 +82,9 @@ h1 {
 .module {
   margin-bottom: 20px;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 5px;
+  background-color: #e9ecef;
 }
 
 .module h2 {
