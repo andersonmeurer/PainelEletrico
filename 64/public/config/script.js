@@ -10,12 +10,70 @@ const DISPLAY_DIO = 'Display_DIO';
 const DISPLAY_CLK = 'Display_CLK';
 const CAMERA = 'Camera';
 
+//--
+class Device {
+  constructor(type, label) {
+    this.type = type;
+    this.label = label;
+  }
+}
+
+class Camera extends Device {
+  constructor(ip, port) {
+    super('camera', 'Camera');
+    this.ip = ip;
+    this.port = port;
+  }
+}
+
+class Display extends Device {
+  constructor(dio, clk) {
+    super('display', 'Display');
+    this.dio = dio;
+    this.clk = clk;
+  }
+}
+
+class Rele extends Device {
+  constructor(pin) {
+    super('rele', 'Rele');
+    this.pin = pin;
+  }
+}
+
+class SensorCorrente extends Device {
+  constructor(pin) {
+    super('sensorcorrente', 'Sensor de Corrente');
+    this.pin = pin;
+  }
+}
+
+class SensorVoltagem extends Device {
+  constructor(pin) {
+    super('sensorvoltagem', 'Sensor de Voltagem');
+    this.pin = pin;
+  }
+}
+
+class Module {
+  constructor(name) {
+    this.name = name;
+    this.devices = [];
+  }
+
+  addDevice(device) {
+    this.devices.push(device);
+  }
+}
+//--
 
 const deviceLabels = {
-  SensorCorrente: SENSOR_CORRENTE,
-  SensorVoltagem: SENSOR_VOLTAGEM,
-  Rele: RELE,
-  Display: DISPLAY
+  sensorcorrente: SENSOR_CORRENTE,
+  sensorvoltagem: SENSOR_VOLTAGEM,
+  rele: RELE,
+  display: DISPLAY,
+  display_dio: DISPLAY_DIO,
+  display_clk: DISPLAY_CLK
 };
 
 function addModule() {
@@ -39,56 +97,136 @@ function addModule() {
   updateModuleList();
 }
 
-function updateModuleList() {
+function updateModuleList(modules) {
   logWithTimestamp(`${CLASS_NAME}::updateModuleList()`);
   const moduleList = document.getElementById('moduleList');
   moduleList.innerHTML = '';
 
-  logWithTimestamp(`${CLASS_NAME}::updateModuleList():`+JSON.stringify(modules));
+  logWithTimestamp(`${CLASS_NAME}::updateModuleList():` + JSON.stringify(modules));
   modules.forEach((module, index) => {
     const moduleDiv = document.createElement('div');
     moduleDiv.className = 'module-item';
 
-    if (module.name === CAMERA) {
-      const cameraIP = module.devices.find(device => device.type === 'camera_ip').pin;
-      const cameraPort = module.devices.find(device => device.type === 'camera_port').pin;
-
-      moduleDiv.innerHTML = `
-        <h2>${module.name}</h2>
-        <div class="devices">
-          <label for="cameraIP-${module.name}">IP da Câmera:</label>
-          <input type="text" id="cameraIP-${module.name}" value="${cameraIP}">
-        </div>
-        <div class="devices">
-          <label for="cameraPort-${module.name}">Porta da Câmera:</label>
-          <input type="text" id="cameraPort-${module.name}" value="${cameraPort}">
-        </div>
-      `;
-    } else {
-      moduleDiv.innerHTML = `
-        <h2>${module.name}</h2>
-        <div class="devices">
-          <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
-          <select id="deviceType-${module.name}">
-            <option value="${DISPLAY}">${DISPLAY}</option>
-            <option value="${RELE}">${RELE}</option>
-            <option value="SensorCorrente">${SENSOR_CORRENTE}</option>
-            <option value="SensorVoltagem">${SENSOR_VOLTAGEM}</option>
-          </select>
-          <button type="button" onclick="addDevice('${module.name}')">Adicionar Dispositivo</button>
-        </div>
-        <div id="${module.name}-devices">
-          ${module.devices.map(device => createDeviceElement(module.name, device)).join('')}
-        </div>
-        <div class="button-group">
-          <button onclick="moveModuleUp(${index})">Mover para Cima</button>
-          <button onclick="moveModuleDown(${index})">Mover para Baixo</button>
-          <button onclick="removeModule(${index})">Remover Módulo</button>
-        </div>
-      `;
-    }
+    renderModule(module, index, moduleDiv);
+    
     moduleList.appendChild(moduleDiv);
   });
+}
+
+function renderModule(module, index, moduleDiv) {
+  const moduleHeader = document.createElement('h3');
+  moduleHeader.textContent = module.name;
+  moduleDiv.appendChild(moduleHeader);
+
+  module.devices.forEach(device => {
+    const deviceDiv = document.createElement('div');
+    deviceDiv.className = 'device-item';
+    const DEVICE_TYPE = device.type.toLowerCase();
+
+
+    logWithTimestamp(`${CLASS_NAME}::renderModule()::::::::::DEVICE_TYPE:` + DEVICE_TYPE+ " - module.name:" +module.name);
+
+    switch (DEVICE_TYPE) {
+      case 'camera':
+        deviceDiv.innerHTML = `
+          <h2>${CAMERA}</h2>
+          <div class="devices">
+            <label for="cameraIP-${CAMERA}">IP da Câmera:</label>
+            <input type="text" id="cameraIP-${CAMERA}" value="${device.ip}">
+          </div>
+          <div class="devices">
+            <label for="cameraPort-${CAMERA}">Porta da Câmera:</label>
+            <input type="text" id="cameraPort-${CAMERA}" value="${device.port}">
+          </div>
+        `;
+        break;
+      case DISPLAY.toLowerCase():
+        logWithTimestamp(`${CLASS_NAME}::Error: ${DEVICE_TYPE} DIO: ${device.dio} CLK: ${device.clk}`);
+        deviceDiv.innerHTML = `
+        <div class="devices" id="${module.name}-${DISPLAY}">
+          <label for="${module.name}-${DISPLAY_CLK}">${DISPLAY_CLK}:</label>
+          <input type="number" id="${module.name}-${DISPLAY_CLK}-pin" value="${device.clk}" onchange="updateDevice('${module.name}', '${DISPLAY_CLK}', 'pin', this.value)">
+          <label for="${module.name}-${DISPLAY_DIO}">${DISPLAY_DIO}:</label>
+          <input type="number" id="${module.name}-${DISPLAY_DIO}-pin" value="${device.dio}" onchange="updateDevice('${module.name}', '${DISPLAY_DIO}', 'pin', this.value)">
+          <button onclick="removeDevice('${module.name}', '${DISPLAY}')">Remover</button>
+        </div>
+      `;
+        break;
+      case RELE.toLowerCase():
+          deviceDiv.innerHTML = `
+            <div class="devices" id="${module.name}-${DEVICE_TYPE}">
+              <label for="${module.name}-${DEVICE_TYPE}-pin">${deviceLabels[DEVICE_TYPE]} PIN:</label>
+              <input type="number" id="${module.name}-${DEVICE_TYPE}-pin" value="${device.pin}" onchange="updateDevice('${module.name}', '${DEVICE_TYPE}', 'pin', this.value)">
+              <button onclick="removeDevice('${module.name}', '${DEVICE_TYPE}')">Remover</button>
+            </div>
+          `;
+        break;
+      case SENSOR_CORRENTE.toLowerCase():
+      case SENSOR_VOLTAGEM.toLowerCase():
+        deviceDiv.innerHTML = `
+        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
+          <label for="${moduleName}-${DEVICE_TYPE}-pin">${deviceLabels[DEVICE_TYPE]} PIN:</label>
+          <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
+            ${Object.entries(analogPins).map(([key, value]) => {
+              return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
+            }).join('')}
+          </select>
+          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+        </div>
+      `;
+      break;
+      /*default:
+        logWithTimestamp(`${CLASS_NAME}::Error: ${DEVICE_TYPE}`);
+        deviceDiv.innerHTML = `
+          <label>${device.label} Type: ${device.type}</label><br>
+          <label>${device.label} Pin: ${device.pin}</label>
+        `;
+        break;*/
+    }
+
+    moduleDiv.appendChild(deviceDiv);
+  });
+}
+
+/*function renderDevice(module, index, moduleDiv) {
+  if (module.name === CAMERA) {
+    const cameraIP = module.devices.find(device => device.type === 'camera_ip').pin;
+    const cameraPort = module.devices.find(device => device.type === 'camera_port').pin;
+
+    moduleDiv.innerHTML = `
+      <h2>${module.name}</h2>
+      <div class="devices">
+        <label for="cameraIP-${module.name}">IP da Câmera:</label>
+        <input type="text" id="cameraIP-${module.name}" value="${cameraIP}">
+      </div>
+      <div class="devices">
+        <label for="cameraPort-${module.name}">Porta da Câmera:</label>
+        <input type="text" id="cameraPort-${module.name}" value="${cameraPort}">
+      </div>
+    `;
+  } else {
+    moduleDiv.innerHTML = `
+      <h2>${module.name}</h2>
+      <div class="devices">
+        <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
+        <select id="deviceType-${module.name}">
+          <option value="${DISPLAY}">${DISPLAY}</option>
+          <option value="${RELE}">${RELE}</option>
+          <option value="SensorCorrente">${SENSOR_CORRENTE}</option>
+          <option value="SensorVoltagem">${SENSOR_VOLTAGEM}</option>
+        </select>
+        <button type="button" onclick="addDevice('${module.name}')">Adicionar Dispositivo</button>
+      </div>
+      <div id="${module.name}-devices">
+        ${module.devices.map(device => createDeviceElement(module.name, device)).join('')}
+      </div>
+      <div class="button-group">
+        <button onclick="moveModuleUp(${index})">Mover para Cima</button>
+        <button onclick="moveModuleDown(${index})">Mover para Baixo</button>
+        <button onclick="removeModule(${index})">Remover Módulo</button>
+      </div>
+    `;
+  }
 }
 
 function createDeviceElement(moduleName, device) {
@@ -100,19 +238,27 @@ function createDeviceElement(moduleName, device) {
     case DISPLAY_CLK.toLowerCase():
     case DISPLAY_DIO.toLowerCase():
       return `
-        <div class="devices">
-          <label for="${moduleName}-${DEVICE_TYPE}-clk">${device.label} CLKK:</label>
-          <input type="number" id="${moduleName}-${DEVICE_TYPE}-clk" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'clk', this.value)">
-          <label for="${moduleName}-${DEVICE_TYPE}-dio">${device.label} DIO:</label>
-          <input type="number" id="${moduleName}-${DEVICE_TYPE}-dio" value="${device.dio}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'dio', this.value)">
-          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
-        </div>
-      `;
+      <div class="devices" id="${moduleName}-${DISPLAY}">
+        <label for="${moduleName}-${DISPLAY_CLK}">${DISPLAY_CLK.label}:</label>
+        <select id="${moduleName}-${DISPLAY_CLK}-pin" onchange="updateDevice('${moduleName}', '${DISPLAY_CLK}', 'pin', this.value)">
+          ${Object.entries(analogPins).map(([key, value]) => {
+            return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
+          }).join('')}
+        </select>
+        <label for="${moduleName}-${DISPLAY_DIO}">${DISPLAY_DIO.label}:</label>
+        <select id="${moduleName}-${DISPLAY_DIO}-pin" onchange="updateDevice('${moduleName}', '${DISPLAY_DIO}', 'pin', this.value)">
+          ${Object.entries(analogPins).map(([key, value]) => {
+            return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
+          }).join('')}
+        </select>
+        <button onclick="removeDevice('${moduleName}', '${DISPLAY}')">Remover</button>
+      </div>
+    `;
       break;
     case RELE.toLowerCase():
       return `
-        <div class="devices">
-          <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
+        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
+          <label for="${moduleName}-${DEVICE_TYPE}-pin">${deviceLabels[DEVICE_TYPE]} PIN:</label>
           <input type="number" id="${moduleName}-${DEVICE_TYPE}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
           <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
         </div>
@@ -123,7 +269,7 @@ function createDeviceElement(moduleName, device) {
         return;
       }
       return `
-        <div class="devices">
+        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
           <label for="${moduleName}-${DEVICE_TYPE}">${DEVICE_TYPE}:</label>
           <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
             ${Object.entries(analogPins).map(([key, value]) => {
@@ -134,7 +280,7 @@ function createDeviceElement(moduleName, device) {
         </div>
       `;
     }
-  }
+  }*/
 
 function addDevice(moduleName) {
   logWithTimestamp(`${CLASS_NAME}::addDevice()`);
@@ -315,6 +461,7 @@ function saveConfig() {
 
 //carregar configuracoes ja salvas
 document.addEventListener('DOMContentLoaded', () => {
+  logWithTimestamp(`${CLASS_NAME}::DOMContentLoaded`);
   fetch('/loadConfig')
     .then(response => {
       console.log('Resposta do servidor recebida:', response);
@@ -324,38 +471,44 @@ document.addEventListener('DOMContentLoaded', () => {
       return response.json();
     })
     .then(data => {
-      const listModules = parseConfig(data);
-      console.log('Arquivo lido com sucesso:', JSON.stringify(listModules));
-      loadConfig(listModules);
+      console.log('Arquivo lido com sucesso:', JSON.stringify(data));
+      loadConfig(JSON.stringify(data));
     })
     .catch(error => {
       console.error('Erro ao carregar a configuração:', error);
     });
 });
 
-function loadConfig(listModules) {
+function loadConfig(config) {
   logWithTimestamp(`${CLASS_NAME}::loadConfig()`);
-  listModules.forEach(module => {
-    const currentModule = {
-      name: module.name,
-      devices: module.devices.map(device => ({
-        type: device.type,
-        pin: device.pin,
-        label: deviceLabels[device.type] || device.type
-      }))
-    };
-    modules.push(currentModule);
-  });
-  updateModuleList();
+  const jsonConfig = JSON.parse(config);
+  const modules = parseConfig(jsonConfig);
+
+  updateModuleList(modules);
 }
 
 function parseConfig(config) {
   logWithTimestamp(`${CLASS_NAME}::parseConfig()`);
   const modules = config.map(module => {
-    const devices = Object.keys(module).filter(key => key !== 'name').map(key => ({
-      type: key,
-      pin: module[key]
-    }));
+    const devices = Object.keys(module).filter(key => key !== 'name').map(key => {
+      const pin = module[key];
+      switch (key) {
+        case 'camera_ip':
+          return new Camera(pin, module.camera_port);
+        case 'display_clk':
+          return new Display(module.display_dio, pin);
+        case 'display_dio':
+          return null; // Already handled with display_clk
+        case 'rele':
+          return new Rele(pin);
+        case 'sensorcorrente':
+          return new SensorCorrente(pin);
+        case 'sensorvoltagem':
+          return new SensorVoltagem(pin);
+        default:
+          return new Device(key, pin);
+      }
+    }).filter(device => device !== null);
     return {
       name: module.name,
       devices: devices
