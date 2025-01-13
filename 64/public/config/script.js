@@ -97,18 +97,15 @@ function addModule() {
   updateModuleList();
 }
 
-function updateModuleList(modules) {
+function updateModuleList() {
   logWithTimestamp(`${CLASS_NAME}::updateModuleList()`);
   const moduleList = document.getElementById('moduleList');
   moduleList.innerHTML = '';
 
-  logWithTimestamp(`${CLASS_NAME}::updateModuleList():` + JSON.stringify(modules));
   modules.forEach((module, index) => {
     const moduleDiv = document.createElement('div');
     moduleDiv.className = 'module-item';
-
     renderModule(module, index, moduleDiv);
-    
     moduleList.appendChild(moduleDiv);
   });
 }
@@ -143,12 +140,12 @@ function renderModule(module, index, moduleDiv) {
       case DISPLAY.toLowerCase():
         logWithTimestamp(`${CLASS_NAME}::Error: ${DEVICE_TYPE} DIO: ${device.dio} CLK: ${device.clk}`);
         deviceDiv.innerHTML = `
-        <div class="devices" id="${module.name}-${DISPLAY}">
+        <div class="devices" id="${module.name}-${DEVICE_TYPE}">
           <label for="${module.name}-${DISPLAY_CLK}">${DISPLAY_CLK}:</label>
           <input type="number" id="${module.name}-${DISPLAY_CLK}-pin" value="${device.clk}" onchange="updateDevice('${module.name}', '${DISPLAY_CLK}', 'pin', this.value)">
           <label for="${module.name}-${DISPLAY_DIO}">${DISPLAY_DIO}:</label>
           <input type="number" id="${module.name}-${DISPLAY_DIO}-pin" value="${device.dio}" onchange="updateDevice('${module.name}', '${DISPLAY_DIO}', 'pin', this.value)">
-          <button onclick="removeDevice('${module.name}', '${DISPLAY}')">Remover</button>
+          <button onclick="removeDevice('${module.name}', '${DEVICE_TYPE}')">Remover</button>
         </div>
       `;
         break;
@@ -164,14 +161,14 @@ function renderModule(module, index, moduleDiv) {
       case SENSOR_CORRENTE.toLowerCase():
       case SENSOR_VOLTAGEM.toLowerCase():
         deviceDiv.innerHTML = `
-        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
-          <label for="${moduleName}-${DEVICE_TYPE}-pin">${deviceLabels[DEVICE_TYPE]} PIN:</label>
-          <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
+        <div class="devices" id="${module.name}-${DEVICE_TYPE}">
+          <label for="${module.name}-${DEVICE_TYPE}-pin">${deviceLabels[DEVICE_TYPE]} PIN:</label>
+          <select id="${module.name}-${DEVICE_TYPE}-pin" onchange="updateDevice('${module.name}', '${DEVICE_TYPE}', 'pin', this.value)">
             ${Object.entries(analogPins).map(([key, value]) => {
               return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
             }).join('')}
           </select>
-          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+          <button onclick="removeDevice('${module.name}', '${DEVICE_TYPE}')">Remover</button>
         </div>
       `;
       break;
@@ -186,6 +183,28 @@ function renderModule(module, index, moduleDiv) {
 
     moduleDiv.appendChild(deviceDiv);
   });
+
+  
+  moduleDiv.innerHTML += `
+    <div class="devices">
+      <label for="deviceType-${module.name}">Tipo de Dispositivo:</label>
+      <select id="deviceType-${module.name}">
+        <option value="${DISPLAY}">${DISPLAY}</option>
+        <option value="${RELE}">${RELE}</option>
+        <option value="SensorCorrente">${SENSOR_CORRENTE}</option>
+        <option value="SensorVoltagem">${SENSOR_VOLTAGEM}</option>
+      </select>
+      <button type="button" onclick="addDevice('${module.name}')">Adicionar Dispositivo</button>
+    </div>
+    <div id="${module.name}-devices">
+      ${module.devices.map(device => createDeviceElement(module.name, device)).join('')}
+    </div>
+    <div class="button-group">
+      <button onclick="moveModuleUp(${index})">Mover para Cima</button>
+      <button onclick="moveModuleDown(${index})">Mover para Baixo</button>
+      <button onclick="removeModule(${index})">Remover Módulo</button>
+    </div>
+  `;
 }
 
 /*function renderDevice(module, index, moduleDiv) {
@@ -227,7 +246,7 @@ function renderModule(module, index, moduleDiv) {
       </div>
     `;
   }
-}
+}*/
 
 function createDeviceElement(moduleName, device) {
   
@@ -280,7 +299,7 @@ function createDeviceElement(moduleName, device) {
         </div>
       `;
     }
-  }*/
+  }
 
 function addDevice(moduleName) {
   logWithTimestamp(`${CLASS_NAME}::addDevice()`);
@@ -368,7 +387,11 @@ function hasDuplicatePins() {
 
 function removeDevice(moduleName, deviceType) {
   logWithTimestamp(`${CLASS_NAME}::removeDevice()`);
-  const module = modules.find(module => module.name === moduleName);
+  const module = modules.find(module => module.name === moduleName); // Certifique-se de que 'modules' é um array
+  if (!module) {
+    console.error(`Módulo com nome ${moduleName} não encontrado.`);
+    return;
+  }
   const deviceIndex = module.devices.findIndex(device => device.type === deviceType);
   if (deviceIndex !== -1) {
     const device = module.devices[deviceIndex];
@@ -379,7 +402,7 @@ function removeDevice(moduleName, deviceType) {
       usedPins.delete(device.pin);
     }
     module.devices.splice(deviceIndex, 1);
-    updateModuleList();
+    updateModuleList(); // Atualizar a lista de módulos
   }
 }
 
@@ -401,7 +424,11 @@ function moveModuleDown(index) {
 
 function removeModule(index) {
   logWithTimestamp(`${CLASS_NAME}::removeModule()`);
-  const module = modules[index];
+  const module = modules[index]; // Acessar o módulo a partir do array 'modules'
+  if (!module) {
+    console.error(`Módulo no índice ${index} não encontrado.`);
+    return;
+  }
   module.devices.forEach(device => {
     if (device.type === DISPLAY) {
       usedPins.delete(device.clk);
@@ -410,8 +437,8 @@ function removeModule(index) {
       usedPins.delete(device.pin);
     }
   });
-  modules.splice(index, 1);
-  updateModuleList();
+  modules.splice(index, 1); // Remover o módulo do array 'modules'
+  updateModuleList(); // Atualizar a lista de módulos
 }
 
 function saveConfig() {
@@ -479,12 +506,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function loadConfig(config) {
+function loadConfig(data) {
   logWithTimestamp(`${CLASS_NAME}::loadConfig()`);
-  const jsonConfig = JSON.parse(config);
-  const modules = parseConfig(jsonConfig);
+  const jsonConfig = JSON.parse(data);
+  const config = parseConfig(jsonConfig);
 
-  updateModuleList(modules);
+  modules.push(...config);
+  updateModuleList();
 }
 
 function parseConfig(config) {
