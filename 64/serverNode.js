@@ -229,13 +229,6 @@ function boardOn_loadFile_loadDevices(config) {
     devices.push(currentDevice);
   }
 
-  // Add camera device with IP and port
-  /*const camera = {
-    name: 'Camera',
-    ip: cameraIP, // Replace with actual IP
-    port: cameraPort // Replace with actual port
-  };
-  devices.push(camera);*/
   return devices;
 }
 
