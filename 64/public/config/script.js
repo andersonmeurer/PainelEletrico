@@ -265,20 +265,26 @@ function hasDuplicatePins() {
   logWithTimestamp(`${CLASS_NAME}::hasDuplicatePins()`);
   const pinUsage = new Set();
   const moduleElements = document.querySelectorAll('.module-item');
+  let hasDuplicate = false;
 
   moduleElements.forEach(moduleElement => {
-    const deviceElements = moduleElement.querySelectorAll('.device');
+    if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
+    const deviceElements = moduleElement.querySelectorAll('.devices');
 
     deviceElements.forEach(deviceElement => {
+      if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
       const pinInputs = deviceElement.querySelectorAll('input[type="text"], input[type="number"]');
       
       pinInputs.forEach(input => {
+        if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
         const pin = input.value.trim();
         if (pin) {
           console.log(`Verificando pino: ${pin}`);
           if (pinUsage.has(pin)) {
             console.log(`Pino duplicado encontrado: ${pin}`);
-            return true;
+            alert(`Pino duplicado encontrado: ${pin}`);
+            hasDuplicate = true;
+            return;
           }
           pinUsage.add(pin);
         }
@@ -286,7 +292,7 @@ function hasDuplicatePins() {
     });
   });
 
-  return false;
+  return hasDuplicate;
 }
 
 function removeDevice(moduleName, deviceType) {
