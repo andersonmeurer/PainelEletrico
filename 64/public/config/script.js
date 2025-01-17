@@ -1,6 +1,5 @@
 const CLASS_NAME = 'script.js->config.js';
 const modules = [];
-const usedPins = new Set();
 const analogPins = {
   69: 'A15', 
   68: 'A14',
@@ -275,12 +274,7 @@ function updateDevice(moduleName, deviceType, pinType, pin) {
     return;
   }
 
-  if (device[pinType] !== '') {
-    usedPins.delete(device[pinType]);
-  }
-
   device[pinType] = pin;
-  usedPins.add(pin);
   inputElement.classList.remove('error');
 }
 
@@ -332,13 +326,6 @@ function removeDevice(moduleName, deviceType) {
   }
   const deviceIndex = module.devices.findIndex(device => device.type === deviceType);
   if (deviceIndex !== -1) {
-    const device = module.devices[deviceIndex];
-    if (device.type === DISPLAY.type) {
-      usedPins.delete(device.clk);
-      usedPins.delete(device.dio);
-    } else {
-      usedPins.delete(device.pin);
-    }
     module.devices.splice(deviceIndex, 1);
     updateModuleList(); // Atualizar a lista de módulos
   }
@@ -367,14 +354,6 @@ function removeModule(index) {
     console.error(`Módulo no índice ${index} não encontrado.`);
     return;
   }
-  module.devices.forEach(device => {
-    if (device.type === DISPLAY.type) {
-      usedPins.delete(device.clk);
-      usedPins.delete(device.dio);
-    } else {
-      usedPins.delete(device.pin);
-    }
-  });
   modules.splice(index, 1); // Remover o módulo do array 'modules'
   updateModuleList(); // Atualizar a lista de módulos
 }
@@ -394,6 +373,20 @@ function saveConfig() {
   if (cameraIpElement && cameraPortElement) {
     const cameraIp = cameraIpElement.value;
     const cameraPort = cameraPortElement.value;
+
+      // Validação do IP da câmera
+    const ipPattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipPattern.test(cameraIp)) {
+      alert('IP da câmera inválido. Deve estar no formato 192.168.x.x');
+      return;
+    }
+  
+      // Validação da porta da câmera
+      if (isNaN(cameraPort) || cameraPort <= 0 || cameraPort > 65535) {
+        alert('Porta da câmera inválida. Deve ser um número inteiro entre 1 e 65535.');
+        return;
+      }
+      
     config['Camera'] = {
       camera_ip: cameraIp,
       camera_port: cameraPort
@@ -418,8 +411,8 @@ function saveConfig() {
       const clkPinElement = document.getElementById(`${moduleName}-${deviceType}_clk-pin`);
       const dioPinElement = document.getElementById(`${moduleName}-${deviceType}_dio-pin`);
       if (clkPinElement && dioPinElement) {
-        const clkPin = clkPinElement.value;
-        const dioPin = dioPinElement.value;
+        const clkPin = parseInt(clkPinElement.value, 10);
+        const dioPin = parseInt(dioPinElement.value, 10);
         config[moduleName][`${deviceType}_clk`] = clkPin;
         config[moduleName][`${deviceType}_dio`] = dioPin;
       }
@@ -428,7 +421,7 @@ function saveConfig() {
       const pinElements = deviceElement.querySelectorAll('input[type="number"], select');
       pinElements.forEach(pinElement => {
         const pinId = pinElement.id.replace(`${moduleName}-`, '').replace('-pin', '');
-        const pinValue = pinElement.value;
+        const pinValue = parseInt(pinElement.value, 10);
         config[moduleName][pinId] = pinValue;
       });
     });
@@ -493,6 +486,14 @@ function loadConfig(data) {
   logWithTimestamp(`${CLASS_NAME}::loadConfig()`);
   const jsonConfig = JSON.parse(data);
   const config = parseConfig(jsonConfig);
+
+  // Verificar se a configuração contém a seção da câmera
+  if (!config.some(module => module.name === 'Camera')) {
+    config.push({
+      name: 'Camera',
+      devices: [new Camera('0.0.0.0', '8080')] // IP e porta padrão da câmera
+    });
+  }
 
   modules.push(...config);
   updateModuleList();
