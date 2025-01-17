@@ -1,7 +1,24 @@
 const CLASS_NAME = 'script.js->config.js';
 const modules = [];
 const usedPins = new Set();
-const analogPins = { 69: 'A15', 68: 'A14', 67: 'A13', 66: 'A12', 65: 'A11', 64: 'A10', 63: 'A9', 62: 'A8', 61: 'A7', 60: 'A6', 59: 'A5', 58: 'A4', 57: 'A3', 56: 'A2', 55: 'A1', 54: 'A0' };
+const analogPins = {
+  69: 'A15', 
+  68: 'A14',
+  67: 'A13',
+  66: 'A12',
+  65: 'A11',
+  64: 'A10',
+  63: 'A9',
+  62: 'A8',
+  61: 'A7',
+  60: 'A6',
+  59: 'A5',
+  58: 'A4',
+  57: 'A3',
+  56: 'A2',
+  55: 'A1',
+  54: 'A0'
+};
 
 //--
 class Device {
@@ -163,7 +180,7 @@ function createDeviceElement(moduleName, device) {
   switch (DEVICE_TYPE) {
     case DISPLAY.type:
       return `
-      <module class="module-item" data-module-name="${moduleName}">
+      <module class="item" data-module-name="${moduleName}">
         <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
           <label for="${moduleName}-${DISPLAY_CLK}">${DISPLAY.label} CLK:</label>
           <input type="number" id="${moduleName}-${DISPLAY_CLK}-pin" value="${device.clk}" onchange="updateDevice('${moduleName}', '${DISPLAY_CLK}', 'pin', this.value)"></input>
@@ -176,7 +193,7 @@ function createDeviceElement(moduleName, device) {
       break;
     case RELE.type:
       return `
-      <module class="module-item" data-module-name="${moduleName}">
+      <module class="item" data-module-name="${moduleName}">
           <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
             <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
             <input type="number" id="${moduleName}-${DEVICE_TYPE}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
@@ -188,7 +205,7 @@ function createDeviceElement(moduleName, device) {
     case SENSOR_CORRENTE.type:
     case SENSOR_VOLTAGEM.type:
       return `
-      <module class="module-item" data-module-name="${moduleName}">
+      <module class="item" data-module-name="${moduleName}">
           <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
             <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
             <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
@@ -273,32 +290,35 @@ function hasDuplicatePins() {
   const moduleElements = document.querySelectorAll('.module-item');
   let hasDuplicate = false;
 
-  if (moduleElements.length > 1) {
-  
-    const moduleElement = moduleElements[0];
+  moduleElements.forEach(moduleElement => {
     if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
-    const deviceElements = moduleElement.querySelectorAll('.devices');
 
-    if (deviceElements.length > 1) {
-      const deviceElement = deviceElements[0];
+    const deviceElements = moduleElement.querySelectorAll('.devices');
+    deviceElements.forEach(deviceElement => {
       if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
-      const pinInputs = deviceElement.querySelectorAll('input[type="number"]');
+
+      const pinInputs = deviceElement.querySelectorAll('input[type="number"], select');
       pinInputs.forEach(input => {
         if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
-        const pin = input.value.trim();
-        if (pin) {
+
+        const pin = parseInt(input.value.trim(), 10);
+        if (!isNaN(pin)) {
           console.log(`Verificando pino: ${pin}`);
           if (pinUsage.has(pin)) {
-            console.log(`Pino duplicado encontrado: ${pin}`);
-            alert(`Pino duplicado encontrado: ${pin}`);
+            let pinLabel = pin;
+            if (input.tagName.toLowerCase() === 'select' && analogPins[pin]) {
+              pinLabel = analogPins[pin];
+            }
+            console.log(`Pino duplicado encontrado: ${pinLabel}`);
+            alert(`Pino duplicado encontrado: ${pinLabel}`);
             hasDuplicate = true;
             return;
           }
           pinUsage.add(pin);
         }
       });
-    };
-  };
+    });
+  });
 
   return hasDuplicate;
 }
@@ -326,7 +346,7 @@ function removeDevice(moduleName, deviceType) {
 
 function moveModuleUp(index) {
   logWithTimestamp(`${CLASS_NAME}::moveModuleUp()`);
-  if (index > 0) {
+  if (index > 1) {
     [modules[index - 1], modules[index]] = [modules[index], modules[index - 1]];
     updateModuleList();
   }
@@ -366,9 +386,8 @@ function saveConfig() {
     return; // Interrompe a execução se houver pinos duplicados
   }
 
-  const moduleElements = document.querySelectorAll('.module-item');
   const config = {};
-
+  
   // Adicionar configuração da câmera
   const cameraIpElement = document.getElementById(`${CAMERA.type}_ip`);
   const cameraPortElement = document.getElementById(`${CAMERA.type}_port`);
@@ -380,7 +399,8 @@ function saveConfig() {
       camera_port: cameraPort
     };
   }
-
+  
+  const moduleElements = document.querySelectorAll('.item');
   moduleElements.forEach(moduleElement => {
     const moduleName = moduleElement.getAttribute('data-module-name');
     if (!moduleName) {
