@@ -56,12 +56,17 @@ app.get('/configFilePath', (req, res) => {
 app.post('/saveConfig', (req, res) => {
   const config = req.body.config;
 
+  if (typeof config !== 'string') {
+    console.error('Configuração inválida:', config);
+    return res.status(400).json({ error: 'Configuração inválida' });
+  }
+  
   fs.writeFile(configFilePath, config, (err) => {
     if (err) {
       console.error('Erro ao salvar o arquivo:', err);
-      res.status(500).send('Erro ao salvar o arquivo');
+      res.status(500).json({ error: 'Erro ao salvar o arquivo' });
     } else {
-      res.send('Arquivo salvo com sucesso');
+      res.json({ message: 'Arquivo salvo com sucesso' });
     }
   });
 });
@@ -209,6 +214,9 @@ function boardOn_loadFile_loadDevices(config) {
       }
       currentDevice = { name: line.slice(1, -1) };
     } else if (currentDevice) {
+      if (line.trim() === '') {
+        return;
+      }
       const [key, value] = line.split('=');
       if (!key || !value) {
         console.error(`${CLASS_NAME}::Linha inválida na configuração: ${line}`);

@@ -163,36 +163,42 @@ function createDeviceElement(moduleName, device) {
   switch (DEVICE_TYPE) {
     case DISPLAY.type:
       return `
-      <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
-        <label for="${moduleName}-${DISPLAY_CLK}">${DISPLAY.label} CLK:</label>
-        <input type="number" id="${moduleName}-${DISPLAY_CLK}-pin" value="${device.clk}" onchange="updateDevice('${moduleName}', '${DISPLAY_CLK}', 'pin', this.value)"></input>
-        <label for="${moduleName}-${DISPLAY_DIO}">${DISPLAY.label} DIO:</label>
-        <input type="number" id="${moduleName}-${DISPLAY_DIO}-pin" value="${device.dio}" onchange="updateDevice('${moduleName}', '${DISPLAY_DIO}', 'pin', this.value)"/>
-        <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
-      </div>
+      <module class="module-item" data-module-name="${moduleName}">
+        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
+          <label for="${moduleName}-${DISPLAY_CLK}">${DISPLAY.label} CLK:</label>
+          <input type="number" id="${moduleName}-${DISPLAY_CLK}-pin" value="${device.clk}" onchange="updateDevice('${moduleName}', '${DISPLAY_CLK}', 'pin', this.value)"></input>
+          <label for="${moduleName}-${DISPLAY_DIO}">${DISPLAY.label} DIO:</label>
+          <input type="number" id="${moduleName}-${DISPLAY_DIO}-pin" value="${device.dio}" onchange="updateDevice('${moduleName}', '${DISPLAY_DIO}', 'pin', this.value)"/>
+          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+        </div>
+        </module>
     `;
       break;
     case RELE.type:
       return `
-        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
-          <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
-          <input type="number" id="${moduleName}-${DEVICE_TYPE}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
-          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
-        </div>
+      <module class="module-item" data-module-name="${moduleName}">
+          <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
+            <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
+            <input type="number" id="${moduleName}-${DEVICE_TYPE}-pin" value="${device.pin}" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
+            <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+          </div>
+          </module>
       `;
       break;
     case SENSOR_CORRENTE.type:
     case SENSOR_VOLTAGEM.type:
       return `
-        <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
-          <label for="${moduleName}-${DEVICE_TYPE}">${DEVICE_TYPE}:</label>
-          <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
-            ${Object.entries(analogPins).map(([key, value]) => {
-              return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
-            }).join('')}
-          </select>
-          <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
-        </div>
+      <module class="module-item" data-module-name="${moduleName}">
+          <div class="devices" id="${moduleName}-${DEVICE_TYPE}">
+            <label for="${moduleName}-${DEVICE_TYPE}-pin">${device.label} PIN:</label>
+            <select id="${moduleName}-${DEVICE_TYPE}-pin" onchange="updateDevice('${moduleName}', '${DEVICE_TYPE}', 'pin', this.value)">
+              ${Object.entries(analogPins).map(([key, value]) => {
+                return `<option value="${key}" ${device.pin == key ? 'selected' : ''}>${value}</option>`;
+              }).join('')}
+            </select>
+            <button onclick="removeDevice('${moduleName}', '${DEVICE_TYPE}')">Remover</button>
+          </div>
+          </module>
       `;
       break;
     default:
@@ -267,14 +273,16 @@ function hasDuplicatePins() {
   const moduleElements = document.querySelectorAll('.module-item');
   let hasDuplicate = false;
 
-  moduleElements.forEach(moduleElement => {
+  if (moduleElements.length > 1) {
+  
+    const moduleElement = moduleElements[0];
     if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
     const deviceElements = moduleElement.querySelectorAll('.devices');
 
-    deviceElements.forEach(deviceElement => {
+    if (deviceElements.length > 1) {
+      const deviceElement = deviceElements[0];
       if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
-      const pinInputs = deviceElement.querySelectorAll('input[type="text"], input[type="number"]');
-      
+      const pinInputs = deviceElement.querySelectorAll('input[type="number"]');
       pinInputs.forEach(input => {
         if (hasDuplicate) return; // Interrompe o loop se um pino duplicado for encontrado
         const pin = input.value.trim();
@@ -289,8 +297,8 @@ function hasDuplicatePins() {
           pinUsage.add(pin);
         }
       });
-    });
-  });
+    };
+  };
 
   return hasDuplicate;
 }
@@ -355,43 +363,86 @@ function saveConfig() {
   logWithTimestamp(`${CLASS_NAME}::saveConfig()`);
   if (hasDuplicatePins()) {
     alert('Existem dispositivos utilizando o mesmo pino. Por favor, verifique as configurações.');
-    return;
+    return; // Interrompe a execução se houver pinos duplicados
   }
 
-  const config = modules.map(module => {
-    if (module.name.toLowerCase() === CAMERA.type) {
-      return `[${module.name}]\ncamera_ip=${document.getElementById(`${CAMERA.type}_ip`).value}\ncamera_port=${document.getElementById(`${CAMERA.type}_port`).value}`;
-    } else {
-      const devicesConfig = module.devices.map(device => {
-        switch (device.type) {
-          case DISPLAY.type:
-            return `${DISPLAY.type}_clk=${device.clk}\n${DISPLAY.type}_dio=${device.dio}`;
-          case RELE.type:
-          case SENSOR_CORRENTE.type:
-          case SENSOR_VOLTAGEM.type:
-            return `${device.type}=${device.pin}`;
-          default:
-            return `${device.type}=${device.pin}`;
-        }
-      }).join('\n');
-      return `[${module.name}]\n${devicesConfig}`;
+  const moduleElements = document.querySelectorAll('.module-item');
+  const config = {};
+
+  // Adicionar configuração da câmera
+  const cameraIpElement = document.getElementById(`${CAMERA.type}_ip`);
+  const cameraPortElement = document.getElementById(`${CAMERA.type}_port`);
+  if (cameraIpElement && cameraPortElement) {
+    const cameraIp = cameraIpElement.value;
+    const cameraPort = cameraPortElement.value;
+    config['Camera'] = {
+      camera_ip: cameraIp,
+      camera_port: cameraPort
+    };
+  }
+
+  moduleElements.forEach(moduleElement => {
+    const moduleName = moduleElement.getAttribute('data-module-name');
+    if (!moduleName) {
+      console.error('Nome do módulo não encontrado');
+      return;
     }
-  }).join('\n\n');
+    if (!config[moduleName]) {
+      config[moduleName] = {};
+    }
+
+    const deviceElements = moduleElement.querySelectorAll('.devices');
+    deviceElements.forEach(deviceElement => {
+      const deviceType = deviceElement.getAttribute('data-device-type');
+      
+      // Verificar e adicionar clkPin e dioPin se existirem
+      const clkPinElement = document.getElementById(`${moduleName}-${deviceType}_clk-pin`);
+      const dioPinElement = document.getElementById(`${moduleName}-${deviceType}_dio-pin`);
+      if (clkPinElement && dioPinElement) {
+        const clkPin = clkPinElement.value;
+        const dioPin = dioPinElement.value;
+        config[moduleName][`${deviceType}_clk`] = clkPin;
+        config[moduleName][`${deviceType}_dio`] = dioPin;
+      }
+
+      // Adicionar todos os pinos (input[type="number"], select)
+      const pinElements = deviceElement.querySelectorAll('input[type="number"], select');
+      pinElements.forEach(pinElement => {
+        const pinId = pinElement.id.replace(`${moduleName}-`, '').replace('-pin', '');
+        const pinValue = pinElement.value;
+        config[moduleName][pinId] = pinValue;
+      });
+    });
+  });
+
+  // Converter o objeto de configuração em uma string
+  let configString = '';
+  for (const [section, values] of Object.entries(config)) {
+    configString += `[${section}]\n`;
+    for (const [key, value] of Object.entries(values)) {
+      configString += `${key}=${value}\n`;
+    }
+    configString += '\n'; // Adiciona uma linha em branco entre as seções
+  }
 
   fetch('/saveConfig', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ config })
+    body: JSON.stringify({ config: configString })
   })
-  .then(response => response.text())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Erro ao salvar a configuração');
+    }
+    return response.json();
+  })
   .then(data => {
-    alert(data);
+    console.log('Configuração salva com sucesso:', data);
   })
   .catch(error => {
     console.error('Erro ao salvar a configuração:', error);
-    alert('Erro ao salvar a configuração');
   });
 }
 
