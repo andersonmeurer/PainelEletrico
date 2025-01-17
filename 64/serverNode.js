@@ -61,14 +61,13 @@ app.post('/saveConfig', (req, res) => {
     return res.status(400).json({ error: 'Configuração inválida' });
   }
   
-  fs.writeFile(configFilePath, config, (err) => {
-    if (err) {
-      console.error('Erro ao salvar o arquivo:', err);
-      res.status(500).json({ error: 'Erro ao salvar o arquivo' });
-    } else {
-      res.json({ message: 'Arquivo salvo com sucesso' });
-    }
-  });
+  try {
+    fs.writeFileSync(configFilePath, config);
+    res.json({ message: 'Arquivo salvo com sucesso' });
+  } catch (err) {
+    console.error('Erro ao salvar o arquivo:', err);
+    res.status(500).json({ error: 'Erro ao salvar o arquivo' });
+  }
 });
 
 app.post('/togglePin', (req, res) => {

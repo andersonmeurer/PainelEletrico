@@ -384,7 +384,6 @@ function saveConfig() {
   moduleElements.forEach(moduleElement => {
     const moduleName = moduleElement.getAttribute('data-module-name');
     if (!moduleName) {
-      console.error('Nome do módulo não encontrado');
       return;
     }
     if (!config[moduleName]) {
@@ -433,16 +432,20 @@ function saveConfig() {
     body: JSON.stringify({ config: configString })
   })
   .then(response => {
+    console.log('Resposta do servidor:', response);
     if (!response.ok) {
+      alert('Erro ao salvar a configuração.');
       throw new Error('Erro ao salvar a configuração');
     }
     return response.json();
   })
   .then(data => {
     console.log('Configuração salva com sucesso:', data);
+    alert('Configuração salva com sucesso.');
   })
   .catch(error => {
     console.error('Erro ao salvar a configuração:', error);
+    alert('Erro ao salvar a configuração.');
   });
 }
 
