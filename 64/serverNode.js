@@ -75,9 +75,9 @@ app.post('/togglePin', (req, res) => {
   if (isBoardReady) {
     const led = new five.Led(pin);
     if (state === 'on') {
-      led.on();
-    } else {
       led.off();
+    } else {
+      led.on();
     }
     res.send('Comando enviado ao Arduino');
   } else {
@@ -113,6 +113,7 @@ wss.on('connection', function connection(ws, req) {
         logWithTimestamp(`Valor recebido do sensor ${data.moduleName}.${data.class}: ${data.value}`);
         // Enviar o valor para o display correspondente
         displays.forEach(display => {
+          logWithTimestamp(`Verificando se o display ${display.moduleName} corresponde ao módulo ${data.moduleName}`);
           if (display.moduleName === data.moduleName) {
             display.printNumber(data.value);
           }
@@ -136,6 +137,7 @@ wss.on('connection', function connection(ws, req) {
 
 let isBoardReady = false;
 const board = new five.Board();
+//const board = new five.Board({port: "COM9"});//fazer tela para escolher a porta quando houver mais de uma serial
 
 board.on("ready", () => {
   logWithTimestamp(`${CLASS_NAME}::Johnny-Five está pronto!`);
@@ -170,6 +172,9 @@ function boardOn_loadFile() {
     const devices = boardOn_loadFile_loadDevices(properties);
 
     devices.forEach(device => {
+
+      logWithTimestamp(`${CLASS_NAME}::Instanciando módulo: {moduleName:${device.name}}`);
+
       if (device.name === CAMERA) {
         logWithTimestamp(`${CLASS_NAME}::Instanciando câmera: {moduleName:${device.name}, IP:${device.cameraIP}, Port:${device.cameraPort}}`);
 
@@ -187,7 +192,8 @@ function boardOn_loadFile() {
         logWithTimestamp(`${CLASS_NAME}::Instanciando sensor de voltagem: {moduleName:${device.name}, Pin:${device.sensorvoltagem}}`);
         new SensorVoltagem(device.name, board, wss, device.sensorvoltagem);
 
-      } else if (device.display_clk && device.display_dio) {
+      }
+      if (device.display_clk && device.display_dio) {
         logWithTimestamp(`${CLASS_NAME}::Instanciando display: {moduleName:${device.name}, Name:${device.name}, {clk:${device.display_clk}, dio:${device.display_dio}}`);
         const display = new Display(device.name, board, device.display_clk, device.display_dio);
         displays.push(display);
